@@ -94,12 +94,15 @@ prepare_bd
 # ---------------------------------------------------------------------------
 # Run behavioral simulation
 # ---------------------------------------------------------------------------
+# In Vivado batch mode launch_simulation compiles, elaborates, starts XSim,
+# and runs automatically until $finish (or the configured runtime). There is
+# no need for a separate 'run all' — calling it after launch_simulation
+# returns causes a hang because XSim has already exited.
+# ---------------------------------------------------------------------------
 puts "=== Launching behavioral simulation ==="
 set t0 [clock seconds]
 
 launch_simulation -simset [get_filesets sim_1] -mode behavioral
-run all
-close_sim
 
 set elapsed [expr {[clock seconds] - $t0}]
 puts "=== Simulation done in ${elapsed}s ==="
