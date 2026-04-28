@@ -55,6 +55,20 @@ open_project $xpr
 # Must run before synthesis on a clean checkout where *.gen/ is absent.
 # ---------------------------------------------------------------------------
 proc prepare_bd {} {
+    # Upgrade locked IPs first — a locked BD cannot generate targets or a wrapper.
+    # IPs become locked when the catalog version differs from the stored XCI
+    # (common on a clean checkout if the IP was built with a different revision).
+    set locked [get_ips -quiet -filter {IS_LOCKED == 1}]
+    if {[llength $locked] > 0} {
+        set names {}
+        foreach ip $locked { lappend names [get_property NAME $ip] }
+        puts "=== Upgrading [llength $locked] locked IP(s): [join $names {, }] ==="
+        upgrade_ip $locked
+        puts "=== IP upgrade complete ==="
+    } else {
+        puts "=== No locked IPs ==="
+    }
+
     set bd_files [get_files -of_objects [get_filesets sources_1] \
                       -filter {FILE_TYPE == "Block Designs"}]
     if {[llength $bd_files] == 0} {
