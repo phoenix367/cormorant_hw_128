@@ -40,7 +40,7 @@ while {$i < [llength $argv]} {
     incr i
 }
 
-puts "=== Cormorant HW build  stage=$stage  jobs=$jobs${ip_repo:+  ip-repo=$ip_repo} ==="
+puts "=== Cormorant HW build  stage=$stage  jobs=$jobs[expr {$ip_repo ne {} ? "  ip-repo=$ip_repo" : ""}] ==="
 
 # ---------------------------------------------------------------------------
 # Locate and open the project
