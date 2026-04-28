@@ -62,11 +62,17 @@ The bitstream is written to:
 
 ### Simulation
 
-**Flow → Run Simulation → Run Behavioral Simulation**, or from the Tcl console:
+From the command line:
+
+```bash
+./sim.sh
+./sim.sh -ip-repo /path/to/kernels
+```
+
+Or from the Vivado Tcl console:
 
 ```tcl
-launch_simulation
-run all
+source scripts/sim.tcl
 ```
 
 Expected output:
@@ -107,7 +113,9 @@ encoding `1.0 = 0x0100`.
 cormorant_hw_128.xpr                         Vivado project file
 cormorant_tb_behav.wcfg                      Waveform config for simulator
 build.sh                                     Shell wrapper: synthesis / impl / bitstream
+sim.sh                                       Shell wrapper: behavioral simulation
 scripts/build.tcl                            Tcl build script (stage + job-count selection)
+scripts/sim.tcl                              Tcl simulation script
 cormorant_hw_128.srcs/
   sources_1/bd/design_cormorant/
     design_cormorant.bd                      Block diagram
