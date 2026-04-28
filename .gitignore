@@ -1,0 +1,15 @@
+# Vivado-generated directories — large and fully reproducible from sources
+cormorant_hw_128.runs/
+cormorant_hw_128.gen/
+cormorant_hw_128.ip_user_files/
+cormorant_hw_128.sim/
+cormorant_hw_128.cache/
+cormorant_hw_128.hw/
+
+# Synthesis checkpoint under srcs/ (large binary)
+cormorant_hw_128.srcs/utils_1/
+
+# Vivado session files
+*.jou
+*.log
+.Xil/

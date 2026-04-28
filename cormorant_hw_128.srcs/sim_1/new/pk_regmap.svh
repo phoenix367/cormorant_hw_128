@@ -1,0 +1,29 @@
+// pk_regmap.svh — PoolingKernel AXI-Lite register map.
+// Source: xpoolingkernel_hw.h  Requires PoolingKernel_0_BASE from cormorant_addr_map.svh.
+
+localparam [39:0] PK_BASE              = PoolingKernel_0_BASE;
+localparam [39:0] PK_AP_CTRL           = PK_BASE + 40'h00;
+localparam [39:0] PK_GIE               = PK_BASE + 40'h04;
+localparam [39:0] PK_IER               = PK_BASE + 40'h08;
+localparam [39:0] PK_ISR               = PK_BASE + 40'h0C;
+localparam [39:0] PK_X_LO              = PK_BASE + 40'h10;
+localparam [39:0] PK_X_HI              = PK_BASE + 40'h14;
+localparam [39:0] PK_Y_LO              = PK_BASE + 40'h1C;
+localparam [39:0] PK_Y_HI              = PK_BASE + 40'h20;
+localparam [39:0] PK_BATCH             = PK_BASE + 40'h28;
+localparam [39:0] PK_CHANNELS          = PK_BASE + 40'h30;
+localparam [39:0] PK_IN_H              = PK_BASE + 40'h38;
+localparam [39:0] PK_IN_W              = PK_BASE + 40'h40;
+localparam [39:0] PK_OUT_H             = PK_BASE + 40'h48;
+localparam [39:0] PK_OUT_W             = PK_BASE + 40'h50;
+localparam [39:0] PK_POOL_H            = PK_BASE + 40'h58;
+localparam [39:0] PK_POOL_W            = PK_BASE + 40'h60;
+localparam [39:0] PK_STRIDE_H          = PK_BASE + 40'h68;
+localparam [39:0] PK_STRIDE_W          = PK_BASE + 40'h70;
+localparam [39:0] PK_PAD_TOP           = PK_BASE + 40'h78;
+localparam [39:0] PK_PAD_LEFT          = PK_BASE + 40'h80;
+localparam [39:0] PK_DIL_H             = PK_BASE + 40'h88;
+localparam [39:0] PK_DIL_W             = PK_BASE + 40'h90;
+localparam [39:0] PK_POOL_TYPE         = PK_BASE + 40'h98;
+localparam [39:0] PK_LP_ORDER          = PK_BASE + 40'hA0;
+localparam [39:0] PK_COUNT_INCLUDE_PAD = PK_BASE + 40'hA8;

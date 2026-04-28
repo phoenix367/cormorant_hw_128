@@ -1,0 +1,33 @@
+// conv_regmap.svh — ConvKernel AXI-Lite register map.
+// Source: xconvkernel_hw.h  Requires ConvKernel_0_BASE from cormorant_addr_map.svh.
+
+localparam [39:0] CK_BASE         = ConvKernel_0_BASE;
+localparam [39:0] CK_AP_CTRL      = CK_BASE + 40'h00;
+localparam [39:0] CK_GIE          = CK_BASE + 40'h04;
+localparam [39:0] CK_IER          = CK_BASE + 40'h08;
+localparam [39:0] CK_ISR          = CK_BASE + 40'h0C;
+localparam [39:0] CK_X_LO         = CK_BASE + 40'h10;
+localparam [39:0] CK_X_HI         = CK_BASE + 40'h14;
+localparam [39:0] CK_W_LO         = CK_BASE + 40'h1C;
+localparam [39:0] CK_W_HI         = CK_BASE + 40'h20;
+localparam [39:0] CK_B_LO         = CK_BASE + 40'h28;
+localparam [39:0] CK_B_HI         = CK_BASE + 40'h2C;
+localparam [39:0] CK_Y_LO         = CK_BASE + 40'h34;
+localparam [39:0] CK_Y_HI         = CK_BASE + 40'h38;
+localparam [39:0] CK_BATCH        = CK_BASE + 40'h40;
+localparam [39:0] CK_IN_CH        = CK_BASE + 40'h48;
+localparam [39:0] CK_IN_H         = CK_BASE + 40'h50;
+localparam [39:0] CK_IN_W         = CK_BASE + 40'h58;
+localparam [39:0] CK_OUT_CH       = CK_BASE + 40'h60;
+localparam [39:0] CK_OUT_H        = CK_BASE + 40'h68;
+localparam [39:0] CK_OUT_W        = CK_BASE + 40'h70;
+localparam [39:0] CK_KH           = CK_BASE + 40'h78;
+localparam [39:0] CK_KW           = CK_BASE + 40'h80;
+localparam [39:0] CK_STRIDE_H     = CK_BASE + 40'h88;
+localparam [39:0] CK_STRIDE_W     = CK_BASE + 40'h90;
+localparam [39:0] CK_DIL_H        = CK_BASE + 40'h98;
+localparam [39:0] CK_DIL_W        = CK_BASE + 40'hA0;
+localparam [39:0] CK_PAD_TOP      = CK_BASE + 40'hA8;
+localparam [39:0] CK_PAD_LEFT     = CK_BASE + 40'hB0;
+localparam [39:0] CK_HAS_BIAS     = CK_BASE + 40'hB8;
+localparam [39:0] CK_IS_DEPTHWISE = CK_BASE + 40'hC0;
