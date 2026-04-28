@@ -2,7 +2,7 @@
 # build.sh — Cormorant HW build wrapper
 #
 # Usage:
-#   ./build.sh [synth|impl|all] [-jobs N]
+#   ./build.sh [synth|impl|all] [-jobs N] [-ip-repo DIR]
 #
 # Stages:
 #   synth   synthesis only
@@ -10,7 +10,9 @@
 #   all     synthesis + implementation + bitstream  (default)
 #
 # Options:
-#   -jobs N   parallel jobs passed to Vivado runs (default: 8)
+#   -jobs N       parallel jobs passed to Vivado runs (default: 8)
+#   -ip-repo DIR  path to the HLS kernel IP repository directory;
+#                 overrides the path stored in the Vivado project file
 #
 # Vivado is sourced from VIVADO_SETTINGS if set, otherwise from the default
 # Xilinx install at /mnt/data/xilinx/2025.2/settings64.sh.
@@ -34,9 +36,14 @@ fi
 
 echo "Using Vivado: $(command -v vivado)"
 
-# Forward all arguments to the Tcl script via -tclargs.
+# Build tclargs array so each token is a separate element (correct quoting).
+TCLARGS=()
+if [[ $# -gt 0 ]]; then
+    TCLARGS=(-tclargs "$@")
+fi
+
 vivado -mode batch \
        -source "$SCRIPT_DIR/scripts/build.tcl" \
        -nojournal \
        -nolog \
-       ${@:+-tclargs "$@"}
+       "${TCLARGS[@]}"

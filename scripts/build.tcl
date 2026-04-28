@@ -5,6 +5,7 @@
 #   vivado -mode batch -source scripts/build.tcl -tclargs synth
 #   vivado -mode batch -source scripts/build.tcl -tclargs impl
 #   vivado -mode batch -source scripts/build.tcl -tclargs all -jobs 12
+#   vivado -mode batch -source scripts/build.tcl -tclargs all -ip-repo /path/to/kernels
 #
 # Stages:
 #   synth  — synthesis only
@@ -12,22 +13,26 @@
 #   all    — synthesis + implementation + bitstream  (default)
 #
 # Options:
-#   -jobs N   parallel jobs (default: 8)
+#   -jobs N        parallel jobs (default: 8)
+#   -ip-repo DIR   override the IP repository path stored in the project file;
+#                  use this to point at the HLS kernel build output directory
 
 # ---------------------------------------------------------------------------
 # Parse arguments
 # ---------------------------------------------------------------------------
-set stage "all"
-set jobs  8
+set stage   "all"
+set jobs    8
+set ip_repo ""
 
 set i 0
 while {$i < [llength $argv]} {
     set arg [lindex $argv $i]
     switch -exact -- $arg {
-        synth   { set stage synth }
-        impl    { set stage impl  }
-        all     { set stage all   }
-        -jobs   { incr i; set jobs [lindex $argv $i] }
+        synth    { set stage synth }
+        impl     { set stage impl  }
+        all      { set stage all   }
+        -jobs    { incr i; set jobs    [lindex $argv $i] }
+        -ip-repo { incr i; set ip_repo [file normalize [lindex $argv $i]] }
         default {
             puts "WARNING: unknown argument '$arg' — ignored"
         }
@@ -35,7 +40,7 @@ while {$i < [llength $argv]} {
     incr i
 }
 
-puts "=== Cormorant HW build  stage=$stage  jobs=$jobs ==="
+puts "=== Cormorant HW build  stage=$stage  jobs=$jobs${ip_repo:+  ip-repo=$ip_repo} ==="
 
 # ---------------------------------------------------------------------------
 # Locate and open the project
@@ -49,6 +54,22 @@ if {![file exists $xpr]} {
 }
 
 open_project $xpr
+
+# ---------------------------------------------------------------------------
+# Override IP repository if -ip-repo was supplied.
+# This makes the build path-independent: the project file stores whatever
+# path was used when the project was last saved, but the caller can always
+# point to the correct build-output directory at run time.
+# ---------------------------------------------------------------------------
+if {$ip_repo ne ""} {
+    if {![file isdirectory $ip_repo]} {
+        error "build.tcl: -ip-repo directory not found: $ip_repo"
+    }
+    puts "=== Setting IP repository: $ip_repo ==="
+    set_property ip_repo_paths [list $ip_repo] [current_project]
+    update_ip_catalog -rebuild
+    puts "=== IP catalog updated ==="
+}
 
 # ---------------------------------------------------------------------------
 # Block-design preparation: generate HDL targets and create the top wrapper.
