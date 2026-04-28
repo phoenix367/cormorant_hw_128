@@ -51,6 +51,36 @@ if {![file exists $xpr]} {
 open_project $xpr
 
 # ---------------------------------------------------------------------------
+# Block-design preparation: generate HDL targets and create the top wrapper.
+# Must run before synthesis on a clean checkout where *.gen/ is absent.
+# ---------------------------------------------------------------------------
+proc prepare_bd {} {
+    set bd_files [get_files -of_objects [get_filesets sources_1] \
+                      -filter {FILE_TYPE == "Block Designs"}]
+    if {[llength $bd_files] == 0} {
+        error "prepare_bd: no block design (.bd) found in sources_1"
+    }
+    set bd_file [lindex $bd_files 0]
+    puts "=== Generating BD targets: [file tail $bd_file] ==="
+    generate_target all $bd_file
+
+    # Create the wrapper only if it is not already tracked in the fileset.
+    set existing [get_files -quiet -of_objects [get_filesets sources_1] \
+                      -filter {FILE_TYPE == "Verilog" && NAME =~ "*wrapper*"}]
+    if {[llength $existing] == 0} {
+        puts "=== Creating BD wrapper ==="
+        set wrapper [make_wrapper -files $bd_file -top]
+        add_files -norecurse $wrapper
+    } else {
+        puts "=== BD wrapper already present — skipping make_wrapper ==="
+    }
+
+    set_property top design_cormorant_wrapper [current_fileset]
+    update_compile_order -fileset sources_1
+    puts "=== BD preparation complete ==="
+}
+
+# ---------------------------------------------------------------------------
 # Synthesis
 # ---------------------------------------------------------------------------
 proc run_synth {jobs} {
@@ -132,7 +162,9 @@ proc run_impl {jobs} {
 # ---------------------------------------------------------------------------
 set t_total [clock seconds]
 
+# BD preparation is always needed before synthesis on a clean tree.
 if {$stage eq "synth" || $stage eq "all"} {
+    prepare_bd
     run_synth $jobs
 }
 if {$stage eq "impl" || $stage eq "all"} {
