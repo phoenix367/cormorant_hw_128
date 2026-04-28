@@ -78,15 +78,17 @@ proc prepare_bd {} {
     puts "=== Generating BD targets: [file tail $bd_file] ==="
     generate_target all $bd_file
 
-    # Create the wrapper only if it is not already tracked in the fileset.
-    set existing [get_files -quiet -of_objects [get_filesets sources_1] \
-                      -filter {FILE_TYPE == "Verilog" && NAME =~ "*wrapper*"}]
-    if {[llength $existing] == 0} {
-        puts "=== Creating BD wrapper ==="
-        set wrapper [make_wrapper -files $bd_file -top]
+    # Always (re)generate the wrapper so it exists at the current *.gen/ path.
+    # A stale fileset reference from a previous run at a different location would
+    # cause synthesis to fail with "module not found" if we skip this step.
+    puts "=== Creating BD wrapper ==="
+    set wrapper [make_wrapper -files $bd_file -top]
+    # Add to fileset only if this exact path is not already registered.
+    if {[llength [get_files -quiet $wrapper]] == 0} {
         add_files -norecurse $wrapper
+        puts "=== Wrapper added: [file tail $wrapper] ==="
     } else {
-        puts "=== BD wrapper already present — skipping make_wrapper ==="
+        puts "=== Wrapper already registered at current path ==="
     }
 
     set_property top design_cormorant_wrapper [current_fileset]
