@@ -1,0 +1,143 @@
+# build.tcl — Cormorant HW batch build script
+#
+# Usage (from project root):
+#   vivado -mode batch -source scripts/build.tcl
+#   vivado -mode batch -source scripts/build.tcl -tclargs synth
+#   vivado -mode batch -source scripts/build.tcl -tclargs impl
+#   vivado -mode batch -source scripts/build.tcl -tclargs all -jobs 12
+#
+# Stages:
+#   synth  — synthesis only
+#   impl   — implementation + bitstream (requires completed synthesis)
+#   all    — synthesis + implementation + bitstream  (default)
+#
+# Options:
+#   -jobs N   parallel jobs (default: 8)
+
+# ---------------------------------------------------------------------------
+# Parse arguments
+# ---------------------------------------------------------------------------
+set stage "all"
+set jobs  8
+
+set i 0
+while {$i < [llength $argv]} {
+    set arg [lindex $argv $i]
+    switch -exact -- $arg {
+        synth   { set stage synth }
+        impl    { set stage impl  }
+        all     { set stage all   }
+        -jobs   { incr i; set jobs [lindex $argv $i] }
+        default {
+            puts "WARNING: unknown argument '$arg' — ignored"
+        }
+    }
+    incr i
+}
+
+puts "=== Cormorant HW build  stage=$stage  jobs=$jobs ==="
+
+# ---------------------------------------------------------------------------
+# Locate and open the project
+# ---------------------------------------------------------------------------
+set script_dir [file normalize [file dirname [info script]]]
+set proj_root  [file normalize [file join $script_dir ..]]
+set xpr        [file join $proj_root cormorant_hw_128.xpr]
+
+if {![file exists $xpr]} {
+    error "build.tcl: project file not found: $xpr"
+}
+
+open_project $xpr
+
+# ---------------------------------------------------------------------------
+# Synthesis
+# ---------------------------------------------------------------------------
+proc run_synth {jobs} {
+    set run synth_1
+    set state [get_property STATUS [get_runs $run]]
+    puts "=== Synthesis: current status = $state ==="
+
+    if {[get_property NEEDS_REFRESH [get_runs $run]] ||
+        $state eq "Not started"} {
+        reset_run $run
+    }
+
+    if {[get_property PROGRESS [get_runs $run]] ne "100%"} {
+        puts "=== Launching synthesis ($jobs jobs) ==="
+        set t0 [clock seconds]
+        launch_runs $run -jobs $jobs
+        wait_on_run $run
+        set elapsed [expr {[clock seconds] - $t0}]
+        puts "=== Synthesis done in ${elapsed}s ==="
+    } else {
+        puts "=== Synthesis already complete — skipping ==="
+    }
+
+    set status [get_property STATUS [get_runs $run]]
+    if {[string match {*ERROR*} $status] || [string match {*Failed*} $status]} {
+        error "Synthesis FAILED: $status"
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Implementation + bitstream
+# ---------------------------------------------------------------------------
+proc run_impl {jobs} {
+    set run impl_1
+    set state [get_property STATUS [get_runs $run]]
+    puts "=== Implementation: current status = $state ==="
+
+    if {[get_property NEEDS_REFRESH [get_runs $run]] ||
+        $state eq "Not started"} {
+        reset_run $run
+    }
+
+    if {[get_property PROGRESS [get_runs $run]] ne "100%"} {
+        puts "=== Launching implementation + bitstream ($jobs jobs) ==="
+        set t0 [clock seconds]
+        launch_runs $run -to_step write_bitstream -jobs $jobs
+        wait_on_run $run
+        set elapsed [expr {[clock seconds] - $t0}]
+        puts "=== Implementation done in ${elapsed}s ==="
+    } else {
+        puts "=== Implementation already complete — skipping ==="
+    }
+
+    set status [get_property STATUS [get_runs $run]]
+    if {[string match {*ERROR*} $status] || [string match {*Failed*} $status]} {
+        error "Implementation FAILED: $status"
+    }
+
+    # Print timing summary
+    open_run $run
+    set wns [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]]
+    set whs [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -hold]]
+    puts "=== Timing summary: WNS=${wns}ns  WHS=${whs}ns ==="
+    if {$wns < 0} {
+        puts "WARNING: setup timing not met (WNS=$wns)"
+    }
+
+    set bit [file join [get_property DIRECTORY [get_runs $run]] \
+                       design_cormorant_wrapper.bit]
+    if {[file exists $bit]} {
+        puts "=== Bitstream: $bit ==="
+    } else {
+        puts "WARNING: bitstream file not found at expected path"
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Execute requested stages
+# ---------------------------------------------------------------------------
+set t_total [clock seconds]
+
+if {$stage eq "synth" || $stage eq "all"} {
+    run_synth $jobs
+}
+if {$stage eq "impl" || $stage eq "all"} {
+    run_impl $jobs
+}
+
+set total_elapsed [expr {[clock seconds] - $t_total}]
+puts "=== Build complete in ${total_elapsed}s ==="

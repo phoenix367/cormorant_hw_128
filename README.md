@@ -30,13 +30,35 @@ open_project cormorant_hw_128.xpr
 
 ### Synthesis and Bitstream
 
-```tcl
-launch_runs synth_1 -jobs 8
-wait_on_run synth_1
-launch_runs impl_1 -to_step write_bitstream -jobs 8
-wait_on_run impl_1
-# Bitstream: cormorant_hw_128.runs/impl_1/design_cormorant_wrapper.bit
+From the command line (sources Vivado automatically):
+
+```bash
+# Full build — synthesis + implementation + bitstream
+./build.sh
+
+# Synthesis only
+./build.sh synth
+
+# Implementation + bitstream (requires completed synthesis)
+./build.sh impl
+
+# Override parallel job count (default: 8)
+./build.sh all -jobs 12
 ```
+
+`VIVADO_SETTINGS` can be set to override the default Vivado install path
+(`/mnt/data/xilinx/2025.2/settings64.sh`).
+
+From the Vivado Tcl console:
+
+```tcl
+source scripts/build.tcl
+source scripts/build.tcl synth
+source scripts/build.tcl impl -jobs 12
+```
+
+The bitstream is written to:
+`cormorant_hw_128.runs/impl_1/design_cormorant_wrapper.bit`
 
 ### Simulation
 
@@ -84,6 +106,8 @@ encoding `1.0 = 0x0100`.
 ```
 cormorant_hw_128.xpr                         Vivado project file
 cormorant_tb_behav.wcfg                      Waveform config for simulator
+build.sh                                     Shell wrapper: synthesis / impl / bitstream
+scripts/build.tcl                            Tcl build script (stage + job-count selection)
 cormorant_hw_128.srcs/
   sources_1/bd/design_cormorant/
     design_cormorant.bd                      Block diagram
