@@ -115,3 +115,8 @@ source cormorant_hw_128.srcs/sim_1/new/gen_addr_map.tcl
 ```
 
 This reads `design_cormorant.hwh` and overwrites `cormorant_addr_map.svh`.
+
+## License
+
+Copyright 2025 GradeBuilder SL. Licensed under the
+[Apache License, Version 2.0](LICENSE).
