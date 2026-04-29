@@ -1,13 +1,11 @@
-# Cormorant HW — 128-bit AXI Variant
+# Cormorant HW
 
 Vivado 2025.2 block design for the **Xilinx KV260 Starter Kit**
 (xck26-sfvc784-2LV-c). Instantiates four HLS neural-network accelerator IP
-cores connected to the Zynq MPSoC PS via a 128-bit AXI data bus.
+cores connected to the Zynq MPSoC PS via AXI.
 
 This is the hardware sub-project of [Cormorant](https://github.com/GradeBuilderSL/cormorant)
-— an FPGA neural-network inference accelerator. The `_128` suffix denotes
-128-bit `m_axi` bus width for all four kernels (doubles DDR bandwidth vs the
-64-bit default).
+— an FPGA neural-network inference accelerator.
 
 ## Prerequisites
 
@@ -95,10 +93,10 @@ Expected output:
 
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
-| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6/Softmax) | `0xA000_0000` | 128-bit AXI4 → `S_AXI_HPC0_FPD` |
-| `MatmulKernel_0` | Tiled matrix multiply | `0xA001_0000` | 128-bit AXI4 → `S_AXI_HPC0_FPD` |
-| `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | 128-bit AXI4 → `S_AXI_HPC0_FPD` |
-| `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | 128-bit AXI4 → `S_AXI_HPC0_FPD` |
+| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6/Softmax) | `0xA000_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
+| `MatmulKernel_0` | Tiled matrix multiply | `0xA001_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
+| `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
+| `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
 
 All data masters aggregate through an AXI SmartConnect (`axi_smc_0`) into
 `S_AXI_HPC0_FPD`. AXI-Lite control ports route through `axi_interconnect_0`.
