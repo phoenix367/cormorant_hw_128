@@ -93,13 +93,16 @@ Expected output:
 
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
-| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6/Softmax) | `0xA000_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
-| `MatmulKernel_0` | Tiled matrix multiply | `0xA001_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
-| `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
-| `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | 32-bit AXI4 → `S_AXI_HPC0_FPD` |
+| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6/Softmax) | `0xA000_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
+| `MatmulKernel_0` | Tiled matrix multiply | `0xA001_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
+| `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
+| `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
 
-All data masters aggregate through an AXI SmartConnect (`axi_smc_0`) into
-`S_AXI_HPC0_FPD`. AXI-Lite control ports route through `axi_interconnect_0`.
+All data masters aggregate through `axi_interconnect_0` (12 slave
+interfaces, one master) into `S_AXI_HPC0_FPD`, whose PS-side width
+(`PSU__SAXIGP0__DATA_WIDTH`) is 128 bits since 2026-09-24 — it had been
+left at 32, which capped ALL PL↔DDR traffic at 32 bits × 100 MHz
+(400 MB/s) and cost 4 cycles per 128-bit kernel word. AXI-Lite control ports route through `axi_interconnect_0`.
 Each kernel drives an interrupt line back to the PS.
 
 Element type: **`ap_fixed<16,8>`** — 2 bytes per element, range ≈ [-128, 128),

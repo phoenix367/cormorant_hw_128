@@ -35,6 +35,16 @@ All four kernel data masters are aggregated through an AXI SmartConnect
 ports go through `axi_interconnect_0`. Each kernel drives an interrupt line
 back to the PS.
 
+Until 2026-09-24 every kernel instance and `S_AXI_HPC0_FPD` were in fact
+32-bit (`C_M_AXI_*_DATA_WIDTH = 32`, `PSU__SAXIGP0__DATA_WIDTH = 32`,
+interconnect crossbar 32) — the conv kernel's native 128-bit weight port
+was narrowed 4:1 by its own adapter.  Now the kernels are exported with
+`-m_axi_min_bitwidth 128` (CMake `AXI_BUS_WIDTH=128`), the instance
+parameters are 128 and HPC0 is 128.  Do not widen the instance
+parameters beyond the IP's own default: the HLS wrapper's
+`C_M_AXI_*_WSTRB_WIDTH` literal does not follow, and WSTRB ends up
+4 bits wide.
+
 The `_128` suffix indicates 128-bit (`m_axi` DATA_WIDTH=128) HLS synthesis for
 all four kernels, which doubles DDR bandwidth versus the 64-bit default.
 

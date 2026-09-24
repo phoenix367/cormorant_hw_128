@@ -4,7 +4,7 @@
     "xci_name": "design_cormorant_MatmulKernel_0_0",
     "cell_name": "MatmulKernel_0",
     "component_reference": "xilinx.com:hls:MatmulKernel:1.0",
-    "ip_revision": "2114584756",
+    "ip_revision": "2114800516",
     "gen_directory": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_MatmulKernel_0_0",
     "parameters": {
       "component_parameters": {
@@ -45,7 +45,7 @@
         "C_M_AXI_GMEM2_PROT_VALUE": [ { "value": "\"000\"", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "C_M_AXI_GMEM2_CACHE_VALUE": [ { "value": "\"0011\"", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "Component_Name": [ { "value": "design_cormorant_MatmulKernel_0_0", "resolve_type": "user", "usage": "all" } ],
-        "clk_period": [ { "value": "3.333", "enabled": false, "usage": "all" } ],
+        "clk_period": [ { "value": "6.667", "enabled": false, "usage": "all" } ],
         "machine": [ { "value": "64", "enabled": false, "usage": "all" } ],
         "combinational": [ { "value": "0", "enabled": false, "usage": "all" } ],
         "latency": [ { "value": "undef", "enabled": false, "usage": "all" } ],
@@ -103,7 +103,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "2114584756" } ],
+        "IPREVISION": [ { "value": "2114800516" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_MatmulKernel_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -990,5 +990,5 @@
       }
     }
   },
-  "checksum": "2b495194"
+  "checksum": "cccca519"
 }

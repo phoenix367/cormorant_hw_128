@@ -4,7 +4,7 @@
     "xci_name": "design_cormorant_VectorOPKernel_0_0",
     "cell_name": "VectorOPKernel_0",
     "component_reference": "xilinx.com:hls:VectorOPKernel:1.0",
-    "ip_revision": "2114584754",
+    "ip_revision": "2114800517",
     "gen_directory": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_VectorOPKernel_0_0",
     "parameters": {
       "component_parameters": {
@@ -45,11 +45,11 @@
         "C_M_AXI_GMEM2_PROT_VALUE": [ { "value": "\"000\"", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "C_M_AXI_GMEM2_CACHE_VALUE": [ { "value": "\"0011\"", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "Component_Name": [ { "value": "design_cormorant_VectorOPKernel_0_0", "resolve_type": "user", "usage": "all" } ],
-        "clk_period": [ { "value": "3.333", "enabled": false, "usage": "all" } ],
+        "clk_period": [ { "value": "6.667", "enabled": false, "usage": "all" } ],
         "machine": [ { "value": "64", "enabled": false, "usage": "all" } ],
         "combinational": [ { "value": "0", "enabled": false, "usage": "all" } ],
-        "latency": [ { "value": "57", "enabled": false, "usage": "all" } ],
-        "II": [ { "value": "39 ~ 67108902", "enabled": false, "usage": "all" } ]
+        "latency": [ { "value": "52", "enabled": false, "usage": "all" } ],
+        "II": [ { "value": "36 ~ 67108899", "enabled": false, "usage": "all" } ]
       },
       "model_parameters": {
         "C_S_AXI_CTRL_ADDR_WIDTH": [ { "value": "7", "resolve_type": "generated", "format": "long", "usage": "all" } ],
@@ -103,7 +103,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "2114584754" } ],
+        "IPREVISION": [ { "value": "2114800517" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_VectorOPKernel_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -958,5 +958,5 @@
       }
     }
   },
-  "checksum": "ef7fb0a2"
+  "checksum": "061207c6"
 }
