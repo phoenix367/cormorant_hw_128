@@ -45,6 +45,15 @@ parameters beyond the IP's own default: the HLS wrapper's
 `C_M_AXI_*_WSTRB_WIDTH` literal does not follow, and WSTRB ends up
 4 bits wide.
 
+**Incremental synthesis is OFF on `synth_1` (2026-09-25).**  The run had
+`AutoIncrementalCheckpoint` with a reference checkpoint from the old
+`~/vivado_projects` copy; a rebuild reused 93 % of that stale netlist and
+dropped a register that had just been added to MatmulKernel's AXI-Lite
+block (`b_packed`, 0x6C) although the HWH, drivers and generated HDL all
+had it — the board then silently ran the old control block.  Keep
+`INCREMENTAL_CHECKPOINT` empty; after any HLS IP change verify a new
+register on the board with a write-then-read before trusting results.
+
 The `_128` suffix indicates 128-bit (`m_axi` DATA_WIDTH=128) HLS synthesis for
 all four kernels, which doubles DDR bandwidth versus the 64-bit default.
 

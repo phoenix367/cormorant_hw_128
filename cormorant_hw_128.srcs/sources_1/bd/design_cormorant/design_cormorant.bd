@@ -53,7 +53,7 @@
     "components": {
       "VectorOPKernel_0": {
         "vlnv": "xilinx.com:hls:VectorOPKernel:1.0",
-        "ip_revision": "2114800596",
+        "ip_revision": "2114800700",
         "xci_name": "design_cormorant_VectorOPKernel_0_0",
         "xci_path": "ip/design_cormorant_VectorOPKernel_0_0/design_cormorant_VectorOPKernel_0_0.xci",
         "inst_hier_path": "VectorOPKernel_0",
@@ -138,7 +138,7 @@
       },
       "MatmulKernel_0": {
         "vlnv": "xilinx.com:hls:MatmulKernel:1.0",
-        "ip_revision": "2114800594",
+        "ip_revision": "2114800699",
         "xci_name": "design_cormorant_MatmulKernel_0_0",
         "xci_path": "ip/design_cormorant_MatmulKernel_0_0/design_cormorant_MatmulKernel_0_0.xci",
         "inst_hier_path": "MatmulKernel_0",
@@ -223,7 +223,7 @@
       },
       "ConvKernel_0": {
         "vlnv": "xilinx.com:hls:ConvKernel:1.0",
-        "ip_revision": "2114800593",
+        "ip_revision": "2114800698",
         "xci_name": "design_cormorant_ConvKernel_0_0",
         "xci_path": "ip/design_cormorant_ConvKernel_0_0/design_cormorant_ConvKernel_0_0.xci",
         "inst_hier_path": "ConvKernel_0",
@@ -331,7 +331,7 @@
       },
       "PoolingKernel_0": {
         "vlnv": "xilinx.com:hls:PoolingKernel:1.0",
-        "ip_revision": "2114800595",
+        "ip_revision": "2114800699",
         "xci_name": "design_cormorant_PoolingKernel_0_0",
         "xci_path": "ip/design_cormorant_PoolingKernel_0_0/design_cormorant_PoolingKernel_0_0.xci",
         "inst_hier_path": "PoolingKernel_0",
