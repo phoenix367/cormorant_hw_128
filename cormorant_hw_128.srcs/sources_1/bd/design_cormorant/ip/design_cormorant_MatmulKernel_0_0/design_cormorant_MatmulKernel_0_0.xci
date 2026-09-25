@@ -4,7 +4,7 @@
     "xci_name": "design_cormorant_MatmulKernel_0_0",
     "cell_name": "MatmulKernel_0",
     "component_reference": "xilinx.com:hls:MatmulKernel:1.0",
-    "ip_revision": "2114800856",
+    "ip_revision": "2114801011",
     "gen_directory": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_MatmulKernel_0_0",
     "parameters": {
       "component_parameters": {
@@ -103,7 +103,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "2114800856" } ],
+        "IPREVISION": [ { "value": "2114801011" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_MatmulKernel_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -1006,5 +1006,5 @@
       }
     }
   },
-  "checksum": "218efb6f"
+  "checksum": "e290e64f"
 }

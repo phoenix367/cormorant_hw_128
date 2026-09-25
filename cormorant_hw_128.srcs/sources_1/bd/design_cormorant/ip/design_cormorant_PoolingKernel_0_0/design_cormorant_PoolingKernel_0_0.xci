@@ -4,7 +4,7 @@
     "xci_name": "design_cormorant_PoolingKernel_0_0",
     "cell_name": "PoolingKernel_0",
     "component_reference": "xilinx.com:hls:PoolingKernel:1.0",
-    "ip_revision": "2114800857",
+    "ip_revision": "2114801012",
     "gen_directory": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_PoolingKernel_0_0",
     "parameters": {
       "component_parameters": {
@@ -80,7 +80,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "2114800857" } ],
+        "IPREVISION": [ { "value": "2114801012" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_PoolingKernel_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -968,5 +968,5 @@
       }
     }
   },
-  "checksum": "57c38c04"
+  "checksum": "d738c597"
 }
