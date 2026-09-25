@@ -25,8 +25,8 @@ The block design instantiates:
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
 | `VectorOPKernel_0` | VectorOPKernel | `0xA000_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
-| `MatmulKernel_0` | MatmulKernel | `0xA001_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
-| `ConvKernel_0` | ConvKernel | `0xA002_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
+| `MatmulKernel_0` | MatmulKernel | `0xA001_0000` | 128-bit AXI4: A/C on `S_AXI_HPC0_FPD`, B on `S_AXI_HPC1_FPD` |
+| `ConvKernel_0` | ConvKernel | `0xA002_0000` | 128-bit AXI4: x/y on `S_AXI_HPC0_FPD`, w/b on `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | PoolingKernel | `0xA003_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
 | `zynq_ultra_ps_e_0` | Zynq MPSoC PS | — | AXI master + DDR controller |
 
@@ -34,6 +34,13 @@ All four kernel data masters are aggregated through an AXI SmartConnect
 (`axi_smc_0`) and routed to `S_AXI_HPC0_FPD` on the PS. AXI-Lite control
 ports go through `axi_interconnect_0`. Each kernel drives an interrupt line
 back to the PS.
+
+Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
+`S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
+B); `axi_interconnect_0` → HPC0 keeps the other nine data masters.  It was
+neutral at 100 MHz (all layers compute-bound) and is kept for the 150 MHz
+step.  When moving a master between ports in Tcl, delete its stale
+`SEG_*` address segments first or `assign_bd_address` collides.
 
 Until 2026-09-24 every kernel instance and `S_AXI_HPC0_FPD` were in fact
 32-bit (`C_M_AXI_*_DATA_WIDTH = 32`, `PSU__SAXIGP0__DATA_WIDTH = 32`,

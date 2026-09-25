@@ -2,7 +2,7 @@
   "schema": "xilinx.com:schema:json_instance:1.0",
   "ip_inst": {
     "xci_name": "design_cormorant_axi_interconnect_0_imp_auto_us_0",
-    "cell_name": "axi_interconnect_0/s05_couplers/auto_us",
+    "cell_name": "axi_interconnect_0/s04_couplers/auto_us",
     "component_reference": "xilinx.com:ip:axi_dwidth_converter:2.1",
     "ip_revision": "37",
     "gen_directory": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_axi_interconnect_0_imp_auto_us_0",
@@ -264,5 +264,5 @@
       }
     }
   },
-  "checksum": "8fe91875"
+  "checksum": "6423b639"
 }
