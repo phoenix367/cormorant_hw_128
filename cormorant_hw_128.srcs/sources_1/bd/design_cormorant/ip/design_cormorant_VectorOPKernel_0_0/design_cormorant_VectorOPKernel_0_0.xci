@@ -4,7 +4,7 @@
     "xci_name": "design_cormorant_VectorOPKernel_0_0",
     "cell_name": "VectorOPKernel_0",
     "component_reference": "xilinx.com:hls:VectorOPKernel:1.0",
-    "ip_revision": "2114801887",
+    "ip_revision": "2114802066",
     "gen_directory": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_VectorOPKernel_0_0",
     "parameters": {
       "component_parameters": {
@@ -103,7 +103,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "2114801887" } ],
+        "IPREVISION": [ { "value": "2114802066" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_VectorOPKernel_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -974,5 +974,5 @@
       }
     }
   },
-  "checksum": "7a24ac91"
+  "checksum": "f7fe2b15"
 }
