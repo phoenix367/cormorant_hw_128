@@ -30,9 +30,7 @@
         "s08_couplers": {},
         "s09_couplers": {},
         "s10_couplers": {},
-        "s11_couplers": {
-          "auto_us": ""
-        },
+        "s11_couplers": {},
         "m00_couplers": {}
       },
       "zynq_ultra_ps_e_0": "",
@@ -43,7 +41,7 @@
     "components": {
       "VectorOPKernel_0": {
         "vlnv": "xilinx.com:hls:VectorOPKernel:1.0",
-        "ip_revision": "2114801013",
+        "ip_revision": "2114801566",
         "xci_name": "design_cormorant_VectorOPKernel_0_0",
         "xci_path": "ip/design_cormorant_VectorOPKernel_0_0/design_cormorant_VectorOPKernel_0_0.xci",
         "inst_hier_path": "VectorOPKernel_0",
@@ -128,7 +126,7 @@
       },
       "MatmulKernel_0": {
         "vlnv": "xilinx.com:hls:MatmulKernel:1.0",
-        "ip_revision": "2114801011",
+        "ip_revision": "2114801565",
         "xci_name": "design_cormorant_MatmulKernel_0_0",
         "xci_path": "ip/design_cormorant_MatmulKernel_0_0/design_cormorant_MatmulKernel_0_0.xci",
         "inst_hier_path": "MatmulKernel_0",
@@ -213,7 +211,7 @@
       },
       "ConvKernel_0": {
         "vlnv": "xilinx.com:hls:ConvKernel:1.0",
-        "ip_revision": "2114801010",
+        "ip_revision": "2114801564",
         "xci_name": "design_cormorant_ConvKernel_0_0",
         "xci_path": "ip/design_cormorant_ConvKernel_0_0/design_cormorant_ConvKernel_0_0.xci",
         "inst_hier_path": "ConvKernel_0",
@@ -321,7 +319,7 @@
       },
       "PoolingKernel_0": {
         "vlnv": "xilinx.com:hls:PoolingKernel:1.0",
-        "ip_revision": "2114801012",
+        "ip_revision": "2114801566",
         "xci_name": "design_cormorant_PoolingKernel_0_0",
         "xci_path": "ip/design_cormorant_PoolingKernel_0_0/design_cormorant_PoolingKernel_0_0.xci",
         "inst_hier_path": "PoolingKernel_0",
@@ -331,7 +329,7 @@
             "value": "128"
           },
           "C_M_AXI_GMEM1_DATA_WIDTH": {
-            "value": "32"
+            "value": "128"
           }
         },
         "interface_ports": {
@@ -1871,76 +1869,11 @@
                 "direction": "I"
               }
             },
-            "components": {
-              "auto_us": {
-                "vlnv": "xilinx.com:ip:axi_dwidth_converter:2.1",
-                "ip_revision": "37",
-                "xci_name": "design_cormorant_axi_interconnect_0_imp_auto_us_1",
-                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_auto_us_1/design_cormorant_axi_interconnect_0_imp_auto_us_1.xci",
-                "inst_hier_path": "axi_interconnect_0/s11_couplers/auto_us",
-                "has_run_ip_tcl": "true",
-                "parameters": {
-                  "MI_DATA_WIDTH": {
-                    "value": "128"
-                  },
-                  "SI_DATA_WIDTH": {
-                    "value": "32"
-                  }
-                },
-                "interface_ports": {
-                  "S_AXI": {
-                    "bd_attributes": {
-                      "BRIDGES": {
-                        "value": "M_AXI",
-                        "value_src": "auto"
-                      },
-                      "TYPE": {
-                        "value": "interior",
-                        "value_src": "default"
-                      }
-                    },
-                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
-                    "mode": "Slave",
-                    "bridges": [
-                      "M_AXI"
-                    ]
-                  },
-                  "M_AXI": {
-                    "bd_attributes": {
-                      "TYPE": {
-                        "value": "interior",
-                        "value_src": "default"
-                      }
-                    }
-                  }
-                }
-              }
-            },
             "interface_nets": {
-              "auto_us_to_s11_couplers": {
-                "interface_ports": [
-                  "M_AXI",
-                  "auto_us/M_AXI"
-                ]
-              },
-              "s11_couplers_to_auto_us": {
+              "s11_couplers_to_s11_couplers": {
                 "interface_ports": [
                   "S_AXI",
-                  "auto_us/S_AXI"
-                ]
-              }
-            },
-            "nets": {
-              "S_ACLK_1": {
-                "ports": [
-                  "S_ACLK",
-                  "auto_us/s_axi_aclk"
-                ]
-              },
-              "S_ARESETN_1": {
-                "ports": [
-                  "S_ARESETN",
-                  "auto_us/s_axi_aresetn"
+                  "M_AXI"
                 ]
               }
             }
