@@ -4,7 +4,7 @@
     "xci_name": "design_cormorant_MatmulKernel_0_0",
     "cell_name": "MatmulKernel_0",
     "component_reference": "xilinx.com:hls:MatmulKernel:1.0",
-    "ip_revision": "2114802065",
+    "ip_revision": "2114804863",
     "gen_directory": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_MatmulKernel_0_0",
     "parameters": {
       "component_parameters": {
@@ -52,7 +52,7 @@
         "II": [ { "value": "undef", "enabled": false, "usage": "all" } ]
       },
       "model_parameters": {
-        "C_S_AXI_CTRL_ADDR_WIDTH": [ { "value": "7", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_S_AXI_CTRL_ADDR_WIDTH": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_S_AXI_CTRL_DATA_WIDTH": [ { "value": "32", "format": "long", "usage": "all" } ],
         "C_M_AXI_GMEM0_ID_WIDTH": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_M_AXI_GMEM0_ADDR_WIDTH": [ { "value": "64", "format": "long", "usage": "all" } ],
@@ -103,7 +103,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "2114802065" } ],
+        "IPREVISION": [ { "value": "2114804863" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../cormorant_hw_128.gen/sources_1/bd/design_cormorant/ip/design_cormorant_MatmulKernel_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -114,10 +114,10 @@
     },
     "boundary": {
       "ports": {
-        "s_axi_ctrl_ARADDR": [ { "direction": "in", "size_left": "6", "size_right": "0" } ],
+        "s_axi_ctrl_ARADDR": [ { "direction": "in", "size_left": "7", "size_right": "0" } ],
         "s_axi_ctrl_ARREADY": [ { "direction": "out" } ],
         "s_axi_ctrl_ARVALID": [ { "direction": "in" } ],
-        "s_axi_ctrl_AWADDR": [ { "direction": "in", "size_left": "6", "size_right": "0" } ],
+        "s_axi_ctrl_AWADDR": [ { "direction": "in", "size_left": "7", "size_right": "0" } ],
         "s_axi_ctrl_AWREADY": [ { "direction": "out" } ],
         "s_axi_ctrl_AWVALID": [ { "direction": "in" } ],
         "s_axi_ctrl_BREADY": [ { "direction": "in" } ],
@@ -262,7 +262,7 @@
           "mode": "slave",
           "memory_map_ref": "s_axi_ctrl",
           "parameters": {
-            "ADDR_WIDTH": [ { "value": "7", "value_src": "constant", "value_permission": "bd_and_user", "usage": "all" } ],
+            "ADDR_WIDTH": [ { "value": "8", "value_src": "constant", "value_permission": "bd_and_user", "usage": "all" } ],
             "DATA_WIDTH": [ { "value": "32", "value_src": "constant", "value_permission": "bd_and_user", "usage": "all" } ],
             "PROTOCOL": [ { "value": "AXI4LITE", "value_src": "constant", "value_permission": "bd_and_user", "usage": "all" } ],
             "READ_WRITE_MODE": [ { "value": "READ_WRITE", "value_src": "constant", "value_permission": "bd_and_user", "usage": "all" } ],
@@ -998,6 +998,54 @@
                       "access": "write-only"
                     }
                   }
+                },
+                "gemv_kw": {
+                  "address_offset": "116",
+                  "size": 32,
+                  "display_name": "gemv_kw",
+                  "description": "Data signal of gemv_kw",
+                  "access": "write-only",
+                  "reset_value": "0",
+                  "fields": {
+                    "gemv_kw": {
+                      "bit_offset": 0,
+                      "bit_width": 32,
+                      "description": "Bit 31 to 0 of gemv_kw",
+                      "access": "write-only"
+                    }
+                  }
+                },
+                "a_to_b_1": {
+                  "address_offset": "124",
+                  "size": 32,
+                  "display_name": "a_to_b_1",
+                  "description": "Data signal of a_to_b",
+                  "access": "write-only",
+                  "reset_value": "0",
+                  "fields": {
+                    "a_to_b": {
+                      "bit_offset": 0,
+                      "bit_width": 32,
+                      "description": "Bit 31 to 0 of a_to_b",
+                      "access": "write-only"
+                    }
+                  }
+                },
+                "a_to_b_2": {
+                  "address_offset": "128",
+                  "size": 32,
+                  "display_name": "a_to_b_2",
+                  "description": "Data signal of a_to_b",
+                  "access": "write-only",
+                  "reset_value": "0",
+                  "fields": {
+                    "a_to_b": {
+                      "bit_offset": 0,
+                      "bit_width": 32,
+                      "description": "Bit 63 to 32 of a_to_b",
+                      "access": "write-only"
+                    }
+                  }
                 }
               }
             }
@@ -1006,5 +1054,5 @@
       }
     }
   },
-  "checksum": "2aa90524"
+  "checksum": "46562294"
 }
