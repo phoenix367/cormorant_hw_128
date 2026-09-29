@@ -10,6 +10,7 @@ class vop_item;
     int unsigned outer;   // number of broadcast iterations
     int unsigned a_inc;   // element stride between A-row starts
     int unsigned b_inc;   // element stride between B-row starts (0 = broadcast)
+    logic [31:0] act;     // fused activation after the op (ACT_NONE / RELU / RELU6)
 
     // a_fills[i] / b_fills[i]: fill value per outer row (length == outer).
     logic [15:0] a_fills[];
@@ -30,7 +31,8 @@ class vop_item;
         int unsigned a_inc_  = 0,
         int unsigned b_inc_  = 0,
         logic [15:0] a_val   = 16'h0100,
-        logic [15:0] b_val_  = 16'h0000
+        logic [15:0] b_val_  = 16'h0000,
+        logic [31:0] act_    = ACT_NONE
     );
         this.label  = lbl;
         this.op     = op_;
@@ -38,9 +40,9 @@ class vop_item;
         this.outer  = outer_;
         this.a_inc  = a_inc_;
         this.b_inc  = b_inc_;
+        this.act    = act_;
         this.addr_a = BUF_A;
-        this.addr_b = (op_ == OP_RELU || op_ == OP_RELU6 || op_ == OP_SOFTMAX)
-                     ? 40'h0 : BUF_B;
+        this.addr_b = (op_ == OP_RELU || op_ == OP_RELU6) ? 40'h0 : BUF_B;
         this.addr_c = BUF_C;
 
         a_fills = new[outer_];
@@ -49,24 +51,24 @@ class vop_item;
         for (int i = 0; i < int'(outer_); i++) begin
             a_fills[i] = a_val;
             b_fills[i] = b_val_;
-            exp_c[i]   = compute_ref(op_, a_val, b_val_);
+            exp_c[i]   = compute_ref(op_, a_val, b_val_, act_);
         end
     endfunction
 
     function void set_a_row(int unsigned row, logic [15:0] val);
         a_fills[row] = val;
-        exp_c[row]   = compute_ref(op, val, b_fills[row]);
+        exp_c[row]   = compute_ref(op, val, b_fills[row], act);
     endfunction
 
     function void set_b_row(int unsigned row, logic [15:0] val);
         b_fills[row] = val;
-        exp_c[row]   = compute_ref(op, a_fills[row], val);
+        exp_c[row]   = compute_ref(op, a_fills[row], val, act);
     endfunction
 
     function string to_string();
         return $sformatf(
-            "%-16s  op=%0d size=%0d outer=%0d a_inc=%0d b_inc=%0d  a[0]=0x%04h b[0]=0x%04h  exp[0]=0x%04h",
-            label, op, size, outer, a_inc, b_inc, a_fills[0], b_fills[0], exp_c[0]);
+            "%-16s  op=%0d act=%0d size=%0d outer=%0d a_inc=%0d b_inc=%0d  a[0]=0x%04h b[0]=0x%04h  exp[0]=0x%04h",
+            label, op, act, size, outer, a_inc, b_inc, a_fills[0], b_fills[0], exp_c[0]);
     endfunction
 endclass
 
@@ -134,6 +136,7 @@ class vop_driver extends axil_agent;
         axil_write(REG_OUTER, 32'(item.outer));
         axil_write(REG_A_INC, 32'(item.a_inc));
         axil_write(REG_B_INC, 32'(item.b_inc));
+        axil_write(REG_ACT,   item.act);        // always: registers persist between tests
         axil_write(REG_GIE,     32'h1);
         axil_write(REG_IER,     32'h1);
         $display("[%0t][VOP_DRV] Asserting ap_start ...", $time);
@@ -271,7 +274,9 @@ class vop_env;
 endclass
 
 // =========================================================================
-// vop_test — 25 test cases covering all ops, saturation, and broadcasting
+// vop_test — 22 test cases covering all ops, fused activations, saturation,
+// and broadcasting.  Alignment contract (VectorOP.h): every run start of a,
+// b, c is 16-byte aligned, so a_inc / b_inc are 0 or multiples of 8 elements.
 //
 // Expected value reference  (raw = real × 256):
 //   ADD:     0x0200+0x0180=0x0380 (2.0+1.5=3.5)
@@ -282,8 +287,7 @@ endclass
 //   RELU6:   0x0800(8.0)→0x0600;  0x0300(3.0)→0x0300
 //   sat+:    0x6400+0x6400=0xC800 > 0x7FFF → 0x7FFF
 //   sat-:    0xFE00×0x6400=-512×25600=-13107200; >>>8=-51200 → 0x8000
-//   SOFTMAX: uniform input → all outputs = 1/size (AP_TRN exact for pow-2 sizes)
-//            size=8  → 0x0020 (0.125);  size=16 → 0x0010 (0.0625)
+//   act:     ADD 1.0 + -2.0 = -1.0 → relu 0x0000;  ADD 4.0 + 4.0 = 8.0 → relu6 0x0600
 // =========================================================================
 class vop_test;
     vop_env        e;
@@ -373,50 +377,21 @@ class vop_test;
 
         // ---- Unary broadcast (a_inc>0, b_inc=0) -------------------------
         // row 0: a=-2.0→0.0;  row 1: a=4.0→4.0;  row 2: a=10.0→6.0
-        it = new("bcast_relu6",   OP_RELU6, 4, /*outer*/3, /*a_inc*/4, /*b_inc*/0,
+        // (size 4 < a_inc 8: each output run's last word is written whole,
+        // tail lanes 0, inside the 8-element row gap)
+        it = new("bcast_relu6",   OP_RELU6, 4, /*outer*/3, /*a_inc*/8, /*b_inc*/0,
                  16'hFE00);
         it.set_a_row(1, 16'h0400);
         it.set_a_row(2, 16'h0A00);
         tests.push_back(it);
 
-        // ---- Softmax (OP_SOFTMAX, outer-row normalisation) ---------------
-        // All elements in a row are equal → exp(a[i]-max)=1 for all i →
-        // output = 1/size for every element.  Power-of-2 sizes are exact
-        // after AP_TRN cast, so expected values are computed analytically.
-        begin
-            logic [15:0] exp8, exp16;
-            exp8  = ref_softmax_uniform(8);    // 0x0020 = 0.125
-            exp16 = ref_softmax_uniform(16);   // 0x0010 = 0.0625
-
-            // outer=1, positive input
-            it = new("sm_1x8",     OP_SOFTMAX, 8,  .a_val(16'h0100));
-            it.exp_c[0] = exp8;
-            tests.push_back(it);
-
-            // outer=1, negative input — max-subtraction yields 0 for all elements
-            it = new("sm_neg_1x8", OP_SOFTMAX, 8,  .a_val(16'hFF00));
-            it.exp_c[0] = exp8;
-            tests.push_back(it);
-
-            // outer=1, size=16
-            it = new("sm_1x16",    OP_SOFTMAX, 16, .a_val(16'h0200));
-            it.exp_c[0] = exp16;
-            tests.push_back(it);
-
-            // outer=2, two rows with different (uniform) values → same 1/8
-            it = new("sm_2x8",     OP_SOFTMAX, 8, /*outer*/2, /*a_inc*/8, /*b_inc*/0,
-                     16'h0100, 16'h0000);
-            it.set_a_row(1, 16'h0300);
-            it.exp_c[0] = exp8;
-            it.exp_c[1] = exp8;
-            tests.push_back(it);
-
-            // outer=4, tight packing (a_inc = size)
-            it = new("sm_4x8",     OP_SOFTMAX, 8, /*outer*/4, /*a_inc*/8, /*b_inc*/0,
-                     16'h0080, 16'h0000);
-            for (int i = 0; i < 4; i++) it.exp_c[i] = exp8;
-            tests.push_back(it);
-        end
+        // ---- Fused activation (register act) ----------------------------
+        it = new("add_act_relu",  OP_ADD, 8, .a_val(16'h0100), .b_val_(16'hFE00),
+                 .act_(ACT_RELU));
+        tests.push_back(it);
+        it = new("add_act_relu6", OP_ADD, 8, .a_val(16'h0400), .b_val_(16'h0400),
+                 .act_(ACT_RELU6));
+        tests.push_back(it);
 
         // ---- Run all tests ----------------------------------------------
         n = tests.size();

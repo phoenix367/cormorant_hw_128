@@ -17,6 +17,7 @@ localparam [39:0] REG_OP      = CTRL_BASE + 40'h3c;
 localparam [39:0] REG_OUTER   = CTRL_BASE + 40'h44;
 localparam [39:0] REG_A_INC   = CTRL_BASE + 40'h4c;
 localparam [39:0] REG_B_INC   = CTRL_BASE + 40'h54;
+localparam [39:0] REG_ACT     = CTRL_BASE + 40'h5c;
 
 // Op codes — must match VectorOP.h
 localparam [31:0] OP_ADD     = 32'd0;
@@ -25,7 +26,11 @@ localparam [31:0] OP_MUL     = 32'd2;
 localparam [31:0] OP_DIV     = 32'd3;
 localparam [31:0] OP_RELU    = 32'd4;
 localparam [31:0] OP_RELU6   = 32'd5;
-localparam [31:0] OP_SOFTMAX = 32'd6;   // unary, axis=-1; b[] not read
+
+// Fused activation after the op (register act) — must match VectorOP.h Act
+localparam [31:0] ACT_NONE   = 32'd0;
+localparam [31:0] ACT_RELU   = 32'd1;
+localparam [31:0] ACT_RELU6  = 32'd2;
 
 // DDR buffer layout for VectorOP tests (40-bit PS address space)
 localparam [39:0] DDR_BASE   = 40'h1000_0000;

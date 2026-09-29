@@ -142,14 +142,28 @@ run all
 ```
 
 The testbench prints a per-kernel pass/fail table and a combined summary
-(`##  TOTAL: N / N passed`, `##  ALL TESTS PASSED`).  **Known issue
-(2026-09-29): the testbench is stale** — VectorOPKernel passes 19 / 25
-(`bcast_relu6` and five tests of a removed `op=6`), ConvKernel test 1
-stops on an `AXI4_ERRS_RDATA_X` fatal on `S_AXI_HPC1_FPD`, and Matmul /
-Pool never run; `scripts/sim.tcl` exits 1 unless `ALL TESTS PASSED` is
-logged.  The per-kernel RTL tests of `hw/cormorant_test_stand`
-(`make behavior_test_*` in the main repo) are the verification path and
-pass.
+(~3 min):
+
+```
+##########################################################
+##  CORMORANT TESTBENCH — OVERALL RESULTS
+##########################################################
+##        VectorOPKernel   22 /  22  (0 failed)
+##            ConvKernel   17 /  17  (0 failed)
+##          MatmulKernel   10 /  10  (0 failed)
+##         PoolingKernel   19 /  19  (0 failed)
+##########################################################
+##  TOTAL: 68 / 68 passed
+##  ALL TESTS PASSED
+##########################################################
+```
+
+`scripts/sim.tcl` exits 1 unless `ALL TESTS PASSED` is logged.  When a
+kernel's interface changes, update the testbench with it: buffers are
+written as the kernels read them (whole 16-byte words; VectorOP strides 0
+or multiples of 8 elements; ConvKernel weights packed tile-major,
+`conv_const_weights`; the new registers — VectorOP `act`, MatMul
+`b_packed` / `gemv_kw` / `a_to_b` — reset to 0 = off).
 
 ### Regenerating the Address Map
 

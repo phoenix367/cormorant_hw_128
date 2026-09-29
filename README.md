@@ -82,32 +82,31 @@ Or from the Vivado Tcl console:
 source scripts/sim.tcl
 ```
 
-**Known issue: the testbench is stale and the simulation fails.**
-VectorOPKernel passes 19 / 25 (`bcast_relu6` and the five `sm_*` tests,
-which use `op=6`, a Softmax op the kernel no longer has, fail); ConvKernel
-test 1 of 17 then stops the run with the AXI protocol checker's
-`AXI4_ERRS_RDATA_X` fatal on `S_AXI_HPC1_FPD` (the weight port reads bytes
-the testbench never wrote), so MatmulKernel and PoolingKernel never run.
-`scripts/sim.tcl` exits 1 unless `simulate.log` contains `ALL TESTS PASSED`
-(a missing log or an early stop is a failure).  Verify the kernels with the
-parent repo's per-kernel RTL behaviour tests (`make behavior_test`,
-`hw/cormorant_test_stand`), which pass.
-
-A passing run ends with one line per kernel scoreboard:
+The run takes ~3 minutes (68 constant-fill cases over the four kernels
+through the PS VIP's DDR model) and ends with:
 
 ```
 ##########################################################
 ##  CORMORANT TESTBENCH — OVERALL RESULTS
 ##########################################################
-##  VectorOPKernel         N /   N  (0 failed)
-##  ConvKernel             N /   N  (0 failed)
-##  MatmulKernel           N /   N  (0 failed)
-##  PoolingKernel          N /   N  (0 failed)
+##        VectorOPKernel   22 /  22  (0 failed)
+##            ConvKernel   17 /  17  (0 failed)
+##          MatmulKernel   10 /  10  (0 failed)
+##         PoolingKernel   19 /  19  (0 failed)
 ##########################################################
-##  TOTAL: N / N passed
+##  TOTAL: 68 / 68 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
+
+`scripts/sim.tcl` exits 1 unless `simulate.log` contains `ALL TESTS PASSED`
+(a missing log or an early stop, e.g. an AXI protocol-checker fatal, is a
+failure).  The testbench (`cormorant_hw_128.srcs/sim_1/new/`) writes every
+buffer the way the kernels read it: whole 16-byte words, VectorOP row
+strides of 0 or multiples of 8 elements, ConvKernel weights in the packed
+tile-major layout (`tb_functions.svh` `conv_const_weights`, see the parent
+repo's `kernels/conv/include/ConvKernel.h`), and the LpPool p=2 reference
+mirrors the kernel's fixed-point `poly_sqrt` bit for bit.
 
 ## Block Design
 

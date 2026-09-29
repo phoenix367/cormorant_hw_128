@@ -8,6 +8,7 @@
 //   DIV      clip(truncate_to_zero(a<<8 / b), −32768, +32767)   (AP_TRN_ZERO)
 //   RELU     max(a, 0)
 //   RELU6    clip(max(a, 0), 0, 0x0600)
+//   act      RELU / RELU6 applied to the op's result (register act)
 //
 // ConvKernel reference (constant-fill, no padding):
 //   acc = n_active × x_raw × w_raw  [+ b_raw×256 if bias]
@@ -19,7 +20,8 @@
 // PoolingKernel reference (constant-fill, no padding):
 //   MaxPool / AvgPool:  y_float = x_float
 //   LpPool p=1, N:      y_float = N × |x_float|
-//   LpPool p=2, N:      y_float = sqrt(N) × |x_float|
+//   LpPool p=2, N:      y_float = poly_sqrt(N × x_float²)  (the kernel's
+//                       fixed-point cubic sqrt, bit-exact: ref_poly_sqrt)
 //   y_raw = clip(floor(y_float × 256), −32768, +32767)
 
 // -----------------------------------------------------------------------
@@ -71,33 +73,28 @@ function automatic logic [15:0] ref_relu6(logic [15:0] a);
     return a;
 endfunction
 
-// Softmax reference — uniform-input row: all elements equal → output = 1/size.
-// Matches HW: exp(a[i]-max)*inv_sum = exp(0)*1/size = 1/size, AP_TRN cast.
-// Only valid when every element in the row is the same value (input cancels).
-function automatic logic [15:0] ref_softmax_uniform(int unsigned size_);
-    real          f;
-    longint signed y;
-    f = 1.0 / $itor(size_);
-    y = longint'($floor(f * 256.0));
-    if (y >  32767) y =  32767;
-    if (y < -32768) y = -32768;
-    return y[15:0];
-endfunction
-
-// Dispatch expected value for one (a, b) pair given op code.
+// Dispatch expected value for one (a, b) pair given op code and the
+// fused activation (act) applied to the op's result.
 function automatic logic [15:0] compute_ref(
     logic [31:0] op,
     logic [15:0] a,
-    logic [15:0] b
+    logic [15:0] b,
+    logic [31:0] act = ACT_NONE
 );
+    logic [15:0] r;
     case (op)
-        OP_ADD:   return ref_add(a, b);
-        OP_SUB:   return ref_sub(a, b);
-        OP_MUL:   return ref_mul(a, b);
-        OP_DIV:   return ref_div(a, b);
-        OP_RELU:  return ref_relu(a);
-        OP_RELU6: return ref_relu6(a);
-        default:  return 16'hXXXX;
+        OP_ADD:   r = ref_add(a, b);
+        OP_SUB:   r = ref_sub(a, b);
+        OP_MUL:   r = ref_mul(a, b);
+        OP_DIV:   r = ref_div(a, b);
+        OP_RELU:  r = ref_relu(a);
+        OP_RELU6: r = ref_relu6(a);
+        default:  r = 16'hXXXX;
+    endcase
+    case (act)
+        ACT_RELU:  return ref_relu(r);
+        ACT_RELU6: return ref_relu6(r);
+        default:   return r;
     endcase
 endfunction
 
@@ -155,8 +152,122 @@ task automatic fill_const_ddr(input [39:0]      base,
 endtask
 
 // -----------------------------------------------------------------------
+// DDR element image — write elems[0..n) (16-bit each) starting at base,
+// padded with zeros to a whole 16-byte word (the 128-bit ports read whole
+// words; bytes the testbench never wrote are X and trip the AXI checker).
+// -----------------------------------------------------------------------
+task automatic write_elems_ddr(input [39:0] base, ref logic [15:0] elems[]);
+    logic [CHUNK_BITS-1:0] buf_mem;
+    int unsigned per_chunk, n, total, i, j, nb;
+    per_chunk = CHUNK_BYTES / 2;
+    n         = elems.size();
+    total     = align_up(n, 8);                 // whole 128-bit words
+    for (i = 0; i < total; i += per_chunk) begin
+        buf_mem = '0;
+        for (j = 0; j < per_chunk && i + j < total; j++)
+            buf_mem[j*16 +: 16] = (i + j < n) ? elems[i + j] : 16'h0000;
+        nb = ((total - i) < per_chunk ? (total - i) : per_chunk) * 2;
+        `PS.write_mem(buf_mem, base + 40'(i * 2), nb);
+    end
+endtask
+
+// -----------------------------------------------------------------------
+// ConvKernel packed weight / bias layout (ConvKernel.h, CONV_OPTIMISATION
+// §2.32 / §2.34): standard weight[out_ch][ic_tiles][kh][kw][lanes(ict)],
+// lanes 16 except a last half tile of 8 when it holds <= 8 channels, lanes
+// past in_ch zero; depthwise weight[out_ch][roundup(kh*kw, 8)]; bias
+// roundup(out_ch, 8).
+// -----------------------------------------------------------------------
+localparam int unsigned CONV_TILE_IC    = 16;
+localparam int unsigned CONV_PORT_ELEMS = 8;
+
+function automatic int unsigned conv_ic_tiles(int unsigned in_ch);
+    return (in_ch + CONV_TILE_IC - 1) / CONV_TILE_IC;
+endfunction
+
+function automatic int unsigned conv_last_tile_lanes(int unsigned in_ch);
+    int unsigned rem = in_ch - (conv_ic_tiles(in_ch) - 1) * CONV_TILE_IC;
+    return (rem <= CONV_PORT_ELEMS) ? CONV_PORT_ELEMS : CONV_TILE_IC;
+endfunction
+
+function automatic int unsigned conv_tile_lanes(int unsigned in_ch, int unsigned ict);
+    return (ict + 1 == conv_ic_tiles(in_ch)) ? conv_last_tile_lanes(in_ch) : CONV_TILE_IC;
+endfunction
+
+function automatic int unsigned conv_weight_per_m(int unsigned in_ch, int unsigned kh,
+                                                  int unsigned kw);
+    return kh * kw * ((conv_ic_tiles(in_ch) - 1) * CONV_TILE_IC + conv_last_tile_lanes(in_ch));
+endfunction
+
+function automatic int unsigned conv_dw_stride(int unsigned kh, int unsigned kw);
+    return align_up(kh * kw, CONV_PORT_ELEMS);
+endfunction
+
+function automatic int unsigned conv_weight_numel(int unsigned out_ch, int unsigned in_ch,
+        int unsigned kh, int unsigned kw, int unsigned is_depthwise);
+    return is_depthwise ? out_ch * conv_dw_stride(kh, kw)
+                        : out_ch * conv_weight_per_m(in_ch, kh, kw);
+endfunction
+
+// The packed image of a constant weight w (every valid tap / channel = w).
+function automatic void conv_const_weights(output logic [15:0] img[],
+        input int unsigned out_ch, in_ch, kh, kw, is_depthwise, input logic [15:0] w);
+    int unsigned idx, lanes;
+    img = new[conv_weight_numel(out_ch, in_ch, kh, kw, is_depthwise)];
+    foreach (img[i]) img[i] = 16'h0000;
+    for (int unsigned m = 0; m < out_ch; m++) begin
+        if (is_depthwise) begin
+            for (int unsigned pos = 0; pos < kh * kw; pos++)
+                img[m * conv_dw_stride(kh, kw) + pos] = w;
+        end else begin
+            for (int unsigned ict = 0; ict < conv_ic_tiles(in_ch); ict++) begin
+                lanes = conv_tile_lanes(in_ch, ict);
+                for (int unsigned pos = 0; pos < kh * kw; pos++)
+                    for (int unsigned l = 0; l < lanes; l++)
+                        if (ict * CONV_TILE_IC + l < in_ch) begin
+                            idx = m * conv_weight_per_m(in_ch, kh, kw)
+                                + ict * kh * kw * CONV_TILE_IC + pos * lanes + l;
+                            img[idx] = w;
+                        end
+            end
+        end
+    end
+endfunction
+
+// -----------------------------------------------------------------------
 // PoolingKernel reference (constant-fill input, no padding)
 // -----------------------------------------------------------------------
+
+// AP_TRN narrowing to frac_bits fractional bits (floor toward -inf).
+function automatic real trn(real v, int frac_bits);
+    real scale = 2.0 ** frac_bits;
+    return $floor(v * scale) / scale;
+endfunction
+
+// Bit-exact mirror of PoolingKernel.cpp poly_sqrt() (LpPool p=2 finalize),
+// ported from inference-scheduler/src/codegen/_simulate.py _pool_poly_sqrt:
+// x = m * 4^k (m in [1, 4), ap_ufixed<18,2>), sqrt(m) by a cubic in
+// ap_fixed<16,1> coefficients with ap_fixed<24,4> Horner steps, then
+// * 2^k and AccData_t (16 fractional bits).
+function automatic real ref_poly_sqrt(real acc);
+    real m, c0, c1, c2, c3, t1, t2, sm;
+    int  k;
+    if (acc <= 0.0) return 0.0;
+    m = acc;
+    k = 0;
+    while (m >= 4.0) begin m = m / 4.0; k++; end
+    while (m <  1.0) begin m = m * 4.0; k--; end
+    m  = trn(m, 16);
+    c0 = trn( 0.4434, 15);
+    c1 = trn( 0.6432, 15);
+    c2 = trn(-0.0943, 15);
+    c3 = trn( 0.0077, 15);
+    t1 = trn(c3 * m + c2, 20);
+    t2 = trn(t1 * m + c1, 20);
+    sm = trn(t2 * m + c0, 20);
+    return trn(sm * (2.0 ** k), 16);
+endfunction
+
 function automatic logic [15:0] compute_pool_const(
     logic [15:0] x_raw,
     int unsigned n,
@@ -173,7 +284,7 @@ function automatic logic [15:0] compute_pool_const(
         if (lp_order == 1)
             y_float = n * (x_float >= 0.0 ? x_float : -x_float);
         else
-            y_float = $sqrt(1.0 * n) * (x_float >= 0.0 ? x_float : -x_float);
+            y_float = ref_poly_sqrt(trn(n * x_float * x_float, 16));
     end
     y_int = longint'($floor(y_float * 256.0));
     if (y_int >  32767) y_int =  32767;

@@ -5,7 +5,11 @@
 //   addr_b | b_bytes + MEM_GAP | addr_y
 //
 // Standard:  n_active = in_ch × kh × kw
-// Depthwise: n_active = kh × kw  (weight shape: out_ch × 1 × kh × kw)
+// Depthwise: n_active = kh × kw
+// Weight / bias buffers use the kernel's packed layout (tb_functions.svh
+// conv_const_weights, ConvKernel.h): the 128-bit weight port reads whole
+// tile-major slabs, so a plain out_ch×in_ch×kh×kw image is both wrong and
+// too short (the reads past it return X from the DDR model).
 
 // =========================================================================
 // conv_item
@@ -76,8 +80,9 @@ class conv_item;
         this.y_expected = compute_conv_const(x_, w_, n_active, b_, logic'(has_bias_));
 
         x_bytes = align_up(batch_ * in_ch_ * in_h_ * in_w_ * ELEM_BYTES, 16);
-        w_bytes = align_up(out_ch_ * (is_depthwise_ ? 1 : in_ch_) * kh_ * kw_ * ELEM_BYTES, 16);
-        b_bytes = align_up(out_ch_ * ELEM_BYTES, 16);
+        w_bytes = align_up(conv_weight_numel(out_ch_, in_ch_, kh_, kw_, is_depthwise_)
+                           * ELEM_BYTES, 16);
+        b_bytes = align_up(align_up(out_ch_, CONV_PORT_ELEMS) * ELEM_BYTES, 16);
 
         this.addr_x = 40'h2000_0000;
         this.addr_w = this.addr_x + 40'(x_bytes) + 40'(MEM_GAP);
@@ -101,23 +106,24 @@ class conv_driver extends axil_agent;
     function new(); super.new("CK_DRV"); endfunction
 
     task run(conv_item item);
-        int unsigned x_bytes, w_bytes, b_bytes, y_bytes;
+        int unsigned x_bytes, b_bytes, y_bytes;
+        logic [15:0] w_img[];
 
         $display("[%0t][CK_DRV] %s", $time, item.to_string());
 
         x_bytes = item.batch  * item.in_ch  * item.in_h  * item.in_w  * ELEM_BYTES;
-        w_bytes = item.out_ch * (item.is_depthwise ? 1 : item.in_ch) *
-                  item.kh * item.kw * ELEM_BYTES;
-        b_bytes = item.out_ch * ELEM_BYTES;
+        b_bytes = align_up(item.out_ch, CONV_PORT_ELEMS) * ELEM_BYTES;
         y_bytes = item.batch  * item.out_ch * item.out_h * item.out_w * ELEM_BYTES;
 
         $display("[%0t][CK_DRV] Loading x (%0d B, val=0x%04h) ...",
                  $time, x_bytes, item.x_val);
         fill_const_ddr(item.addr_x, align_up(x_bytes, 16), item.x_val);
 
-        $display("[%0t][CK_DRV] Loading weight (%0d B, val=0x%04h) ...",
-                 $time, w_bytes, item.w_val);
-        fill_const_ddr(item.addr_w, align_up(w_bytes, 16), item.w_val);
+        conv_const_weights(w_img, item.out_ch, item.in_ch, item.kh, item.kw,
+                           item.is_depthwise, item.w_val);
+        $display("[%0t][CK_DRV] Loading packed weight (%0d elements, val=0x%04h) ...",
+                 $time, w_img.size(), item.w_val);
+        write_elems_ddr(item.addr_w, w_img);
 
         $display("[%0t][CK_DRV] Loading bias (%0d B, val=0x%04h, has_bias=%0d) ...",
                  $time, b_bytes, item.b_val, item.has_bias);
