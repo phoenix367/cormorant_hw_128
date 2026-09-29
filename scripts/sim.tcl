@@ -114,7 +114,8 @@ set sim_log [file join $proj_root \
                  cormorant_hw_128.sim sim_1 behav xsim simulate.log]
 
 if {![file exists $sim_log]} {
-    puts "WARNING: simulate.log not found at $sim_log — cannot verify result"
+    puts "=== SIMULATION FAILED — simulate.log not found at $sim_log ==="
+    exit 1
 } else {
     set fp [open $sim_log r]
     set content [read $fp]
@@ -126,6 +127,9 @@ if {![file exists $sim_log]} {
     } elseif {[regexp {ALL TESTS PASSED} $content]} {
         puts "=== ALL TESTS PASSED ==="
     } else {
-        puts "WARNING: simulation result unclear — check $sim_log manually"
+        # no summary: the testbench stopped early (e.g. an AXI protocol
+        # checker's Fatal) — that is a failure, not a pass
+        puts "=== SIMULATION FAILED — no test summary (stopped early?), see [file normalize $sim_log] ==="
+        exit 1
     }
 }

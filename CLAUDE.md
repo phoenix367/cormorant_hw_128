@@ -141,21 +141,15 @@ launch_simulation
 run all
 ```
 
-The testbench prints a per-kernel pass/fail table and a combined summary:
-
-```
-##########################################################
-##  CORMORANT TESTBENCH — OVERALL RESULTS
-##########################################################
-##  VectorOPKernel     12 /  12  (0 failed)
-##  ConvKernel         18 /  18  (0 failed)
-##  MatmulKernel        8 /   8  (0 failed)
-##  PoolingKernel      10 /  10  (0 failed)
-##########################################################
-##  TOTAL: 48 / 48 passed
-##  ALL TESTS PASSED
-##########################################################
-```
+The testbench prints a per-kernel pass/fail table and a combined summary
+(`##  TOTAL: N / N passed`, `##  ALL TESTS PASSED`).  **Known issue
+(2026-09-29): the testbench is stale** — VectorOPKernel passes 19 / 25
+(`bcast_relu6` and five tests of a removed `op=6`), ConvKernel test 1
+stops on an `AXI4_ERRS_RDATA_X` fatal on `S_AXI_HPC1_FPD`, and Matmul /
+Pool never run; `scripts/sim.tcl` exits 1 unless `ALL TESTS PASSED` is
+logged.  The per-kernel RTL tests of `hw/cormorant_test_stand`
+(`make behavior_test_*` in the main repo) are the verification path and
+pass.
 
 ### Regenerating the Address Map
 

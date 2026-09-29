@@ -28,7 +28,7 @@ open_project cormorant_hw_128.xpr
 
 ### Synthesis and Bitstream
 
-From the command line (sources Vivado automatically):
+From the command line (sources Vivado when `vivado` is not on `PATH`):
 
 ```bash
 # Full build — synthesis + implementation + bitstream
@@ -44,8 +44,17 @@ From the command line (sources Vivado automatically):
 ./build.sh all -jobs 12
 ```
 
-`VIVADO_SETTINGS` can be set to override the default Vivado install path
-(`/mnt/data/xilinx/2025.2/settings64.sh`).
+The scripts use the `vivado` on `PATH` (the parent repo's
+`<Xilinx>/2025.2/Vitis/settings64.sh` puts it there); only without one do
+they source `VIVADO_SETTINGS`, whose default
+(`/mnt/data/xilinx/2025.2/settings64.sh`) is the maintainer's install — set
+it to your `settings64.sh`.
+
+The build modifies tracked files (`design_cormorant.bd`, the `.xci` files,
+`cormorant_hw_128.xpr`); do not commit them.  Vivado's warning `File not
+found as '…/utils_1/imports/synth_1/design_cormorant_wrapper.dcp'; using
+path …` is harmless: the project still lists the maintainer's old
+incremental-synthesis checkpoint, and incremental synthesis is off.
 
 From the Vivado Tcl console:
 
@@ -73,18 +82,29 @@ Or from the Vivado Tcl console:
 source scripts/sim.tcl
 ```
 
-Expected output:
+**Known issue: the testbench is stale and the simulation fails.**
+VectorOPKernel passes 19 / 25 (`bcast_relu6` and the five `sm_*` tests,
+which use `op=6`, a Softmax op the kernel no longer has, fail); ConvKernel
+test 1 of 17 then stops the run with the AXI protocol checker's
+`AXI4_ERRS_RDATA_X` fatal on `S_AXI_HPC1_FPD` (the weight port reads bytes
+the testbench never wrote), so MatmulKernel and PoolingKernel never run.
+`scripts/sim.tcl` exits 1 unless `simulate.log` contains `ALL TESTS PASSED`
+(a missing log or an early stop is a failure).  Verify the kernels with the
+parent repo's per-kernel RTL behaviour tests (`make behavior_test`,
+`hw/cormorant_test_stand`), which pass.
+
+A passing run ends with one line per kernel scoreboard:
 
 ```
 ##########################################################
 ##  CORMORANT TESTBENCH — OVERALL RESULTS
 ##########################################################
-##  VectorOPKernel     12 /  12  (0 failed)
-##  ConvKernel         18 /  18  (0 failed)
-##  MatmulKernel        8 /   8  (0 failed)
-##  PoolingKernel      10 /  10  (0 failed)
+##  VectorOPKernel         N /   N  (0 failed)
+##  ConvKernel             N /   N  (0 failed)
+##  MatmulKernel           N /   N  (0 failed)
+##  PoolingKernel          N /   N  (0 failed)
 ##########################################################
-##  TOTAL: 48 / 48 passed
+##  TOTAL: N / N passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
@@ -93,16 +113,21 @@ Expected output:
 
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
-| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6/Softmax) | `0xA000_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
-| `MatmulKernel_0` | Tiled matrix multiply | `0xA001_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
-| `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
-| `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | AXI4 → `S_AXI_HPC0_FPD` (128-bit) |
+| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6, fused Relu / Relu6 `act`) | `0xA000_0000` | gmem0–2 → `S_AXI_HPC0_FPD` |
+| `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
+| `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | gmem0, gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
+| `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | gmem0–1 → `S_AXI_HPC0_FPD` |
 
-All data masters aggregate through `axi_interconnect_0` (12 slave
-interfaces, one master) into `S_AXI_HPC0_FPD`, whose PS-side width
-(`PSU__SAXIGP0__DATA_WIDTH`) is 128 bits since 2026-09-24 — it had been
-left at 32, which capped ALL PL↔DDR traffic at 32 bits × 100 MHz
-(400 MB/s) and cost 4 cycles per 128-bit kernel word. AXI-Lite control ports route through `axi_interconnect_0`.
+All data ports are 128-bit AXI4.  Nine of them aggregate through
+`axi_interconnect_0` into `S_AXI_HPC0_FPD`, the other three (ConvKernel
+gmem1 / gmem2, MatmulKernel gmem1) through `axi_mem_intercon` into
+`S_AXI_HPC1_FPD`; both PS-side widths (`PSU__SAXIGP0__DATA_WIDTH`,
+`PSU__SAXIGP1__DATA_WIDTH`) are 128 bits.  (`S_AXI_HPC0_FPD` had been left
+at 32 until 2026-09-24, which capped all PL↔DDR traffic at 32 bits ×
+100 MHz (400 MB/s) and cost 4 cycles per 128-bit kernel word;
+`upload_bitstream.py` also writes the AFIFM width registers after the
+overlay.)  The AXI-Lite control ports hang off `M_AXI_HPM0_FPD` through
+the `axi_smc` SmartConnect.
 Each kernel drives an interrupt line back to the PS.
 
 Element type: **`ap_fixed<16,8>`** — 2 bytes per element, range ≈ [-128, 128),
