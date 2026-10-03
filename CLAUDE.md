@@ -50,7 +50,13 @@ was narrowed 4:1 by its own adapter.  Now the kernels are exported with
 parameters are 128 and HPC0 is 128.  Do not widen the instance
 parameters beyond the IP's own default: the HLS wrapper's
 `C_M_AXI_*_WSTRB_WIDTH` literal does not follow, and WSTRB ends up
-4 bits wide.
+4 bits wide.  `build.tcl` / `sim.tcl` enforce it: after the IP upgrade,
+`scripts/ip_defaults.tcl` resets every kernel instance's
+`C_M_AXI_*_DATA_WIDTH` to the default of the IP in the catalogue (read from
+a temporary instance; Vivado has no reset to default).  Two IPs share the
+MatmulKernel VLNV — the HLS export (gmem2 32 bits) and the parent repo's
+SystemVerilog kernel (`kernels/matmul_rtl`, gmem2 128, built with
+`AXI_MATMUL_IMPL=rtl`) — and `upgrade_ip` keeps the instance's old value.
 
 **Incremental synthesis is OFF on `synth_1` (2026-09-25).**  The run had
 `AutoIncrementalCheckpoint` with a reference checkpoint from the old

@@ -113,7 +113,7 @@ mirrors the kernel's fixed-point `poly_sqrt` bit for bit.
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
 | `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6, fused Relu / Relu6 `act`) | `0xA000_0000` | gmem0–2 → `S_AXI_HPC0_FPD` |
-| `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
+| `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming (HLS) — or the parent repo's SystemVerilog kernel (`AXI_MATMUL_IMPL=rtl`, same VLNV) | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
 | `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | gmem0, gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | gmem0–1 → `S_AXI_HPC0_FPD` |
 
@@ -128,6 +128,12 @@ at 32 until 2026-09-24, which capped all PL↔DDR traffic at 32 bits ×
 overlay.)  The AXI-Lite control ports hang off `M_AXI_HPM0_FPD` through
 the `axi_smc` SmartConnect.
 Each kernel drives an interrupt line back to the PS.
+
+Instance widths follow the IPs: after the IP upgrade, `build.tcl` and
+`sim.tcl` put every kernel instance's `C_M_AXI_*_DATA_WIDTH` back to the
+default of the IP in the catalogue (`scripts/ip_defaults.tcl`).  The two
+MatmulKernel IPs differ there: the HLS export's gmem2 is 32 bits, the RTL
+kernel's 128, and `upgrade_ip` keeps the instance's old value.
 
 Element type: **`ap_fixed<16,8>`** — 2 bytes per element, range ≈ [-128, 128),
 encoding `1.0 = 0x0100`.

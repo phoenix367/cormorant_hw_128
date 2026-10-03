@@ -46,6 +46,7 @@ puts "=== Cormorant HW build  stage=$stage  jobs=$jobs[expr {$ip_repo ne {} ? " 
 # Locate and open the project
 # ---------------------------------------------------------------------------
 set script_dir [file normalize [file dirname [info script]]]
+source [file join $script_dir ip_defaults.tcl]
 set proj_root  [file normalize [file join $script_dir ..]]
 set xpr        [file join $proj_root cormorant_hw_128.xpr]
 
@@ -96,6 +97,8 @@ proc prepare_bd {} {
         error "prepare_bd: no block design (.bd) found in sources_1"
     }
     set bd_file [lindex $bd_files 0]
+    # instance m_axi widths = the defaults of the IPs just upgraded to
+    apply_ip_default_widths $bd_file
     puts "=== Generating BD targets: [file tail $bd_file] ==="
     generate_target all $bd_file
 
