@@ -1,8 +1,9 @@
 # CLAUDE.md — cormorant_hw_128
 
 Vivado 2025.2 block design project for the **Xilinx KV260 Starter Kit**
-(xck26-sfvc784-2LV-c). Instantiates four HLS-synthesized accelerator IP cores
-connected to the Zynq MPSoC PS via a 128-bit AXI bus.
+(xck26-sfvc784-2LV-c). Instantiates four accelerator IP cores (three
+HLS-synthesized, the MatmulKernel in SystemVerilog) connected to the Zynq
+MPSoC PS via a 128-bit AXI bus.
 
 ## What Lives Here
 
@@ -13,6 +14,7 @@ connected to the Zynq MPSoC PS via a 128-bit AXI bus.
 | `cormorant_hw_128.srcs/sources_1/bd/design_cormorant/ip/*/` | IP core configurations (`.xci`) |
 | `cormorant_hw_128.srcs/sim_1/new/` | Simulation testbench (SystemVerilog) |
 | `cormorant_tb_behav.wcfg` | Waveform configuration for Vivado simulator |
+| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`) |
 
 Generated directories (`*.runs/`, `*.gen/`, `*.ip_user_files/`, `*.sim/`,
 `*.cache/`, `*.hw/`) are excluded from git — regenerate them by opening the
@@ -30,10 +32,10 @@ The block design instantiates:
 | `PoolingKernel_0` | PoolingKernel | `0xA003_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
 | `zynq_ultra_ps_e_0` | Zynq MPSoC PS | — | AXI master + DDR controller |
 
-All four kernel data masters are aggregated through an AXI SmartConnect
-(`axi_smc_0`) and routed to `S_AXI_HPC0_FPD` on the PS. AXI-Lite control
-ports go through `axi_interconnect_0`. Each kernel drives an interrupt line
-back to the PS.
+The kernel data masters are aggregated through `axi_interconnect_0` (into
+`S_AXI_HPC0_FPD`) and `axi_mem_intercon` (into `S_AXI_HPC1_FPD`) on the PS.
+AXI-Lite control ports go from `M_AXI_HPM0_FPD` through the `axi_smc`
+SmartConnect. Each kernel drives an interrupt line back to the PS.
 
 Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
 `S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
@@ -55,8 +57,9 @@ parameters beyond the IP's own default: the HLS wrapper's
 `C_M_AXI_*_DATA_WIDTH` to the default of the IP in the catalogue (read from
 a temporary instance; Vivado has no reset to default).  Two IPs share the
 MatmulKernel VLNV — the HLS export (gmem2 32 bits) and the parent repo's
-SystemVerilog kernel (`kernels/matmul_rtl`, gmem2 128, built with
-`AXI_MATMUL_IMPL=rtl`) — and `upgrade_ip` keeps the instance's old value.
+SystemVerilog kernel (`kernels/matmul_rtl`, gmem2 128, the one the parent
+build packages, `make package_matmul_rtl`) — and `upgrade_ip` keeps the
+instance's old value.
 
 **Incremental synthesis is OFF on `synth_1` (2026-09-25).**  The run had
 `AutoIncrementalCheckpoint` with a reference checkpoint from the old
@@ -109,28 +112,29 @@ pattern in plain SystemVerilog (no UVM library dependency). All files are
 | `pk_regmap.svh` | PoolingKernel register offsets and DDR layout |
 | `axil_agent.svh` | Virtual base class: `axil_write` / `axil_read` via PS VIP |
 | `base_scoreboard.svh` | Abstract base: pass/fail counters, `check()`, `report()` |
-| `tb_functions.svh` | Fixed-point helpers: `fp_add`, `fp_mul`, saturate, encode/decode |
+| `tb_functions.svh` | Fixed-point reference helpers: `ref_add` … `ref_relu6`, `compute_*_const`, `ref_poly_sqrt`, `conv_const_weights`, DDR fills |
 | `tb_infra.svh` | PS VIP DDRC write-commit workaround (inactive-region race fix) |
-| `vop_classes.svh` | `vop_item`, `vop_driver`, `vop_monitor`, `vop_env`, `vop_test` |
-| `conv_classes.svh` | `conv_item`, `conv_driver`, `conv_monitor`, `conv_env`, `conv_test` |
-| `mm_classes.svh` | `mm_item`, `mm_driver`, `mm_monitor`, `mm_env`, `mm_test` |
-| `pk_classes.svh` | `pk_item`, `pk_driver`, `pk_monitor`, `pk_env`, `pk_test` |
+| `vop_classes.svh` | `vop_item`, `vop_driver`, `vop_monitor`, `vop_scoreboard`, `vop_env`, `vop_test` |
+| `conv_classes.svh` | `conv_item`, `conv_driver`, `conv_monitor`, `conv_scoreboard`, `conv_env`, `conv_test` |
+| `mm_classes.svh` | `mm_item`, `mm_driver`, `mm_monitor`, `mm_scoreboard`, `mm_env`, `mm_test` |
+| `pk_classes.svh` | `pk_item`, `pk_driver`, `pk_monitor`, `pk_scoreboard`, `pk_env`, `pk_test` |
 | `gen_addr_map.tcl` | Vivado Tcl script that reads the `.hwh` and writes `cormorant_addr_map.svh` |
 
 ### Class Hierarchy
 
-Each kernel follows the same five-class pattern:
+Each kernel follows the same six-class pattern:
 
 ```
 axil_agent  (axil_agent.svh)
-    └── <k>_driver        writes AXI-Lite registers, triggers kernel, polls interrupt
+    └── <k>_driver        writes AXI-Lite registers, enables the interrupt, triggers kernel
+    └── <k>_monitor       waits for the interrupt, reads ap_ctrl / ISR, clears it
 
 base_scoreboard  (base_scoreboard.svh)
     └── <k>_scoreboard    computes reference result, reads DDR output, checks element-wise
 
 <k>_item     — transaction descriptor (addresses, operands, expected result)
-<k>_env      — aggregates driver + monitor/scoreboard, exposes run()
-<k>_test     — constructs env, defines test cases, calls env.run()
+<k>_env      — aggregates driver + monitor/scoreboard, exposes run_one()
+<k>_test     — constructs env, defines test cases, calls env.run_one()
 ```
 
 DUT interrupt signals are wired through a thin `irq_if` interface in
@@ -196,10 +200,11 @@ This reads `design_cormorant.hwh` and overwrites `cormorant_addr_map.svh`.
 | `b_lo/hi` | `+0x1C/20` | 64-bit DDR address of input B (ignored for unary) |
 | `c_lo/hi` | `+0x28/2C` | 64-bit DDR address of output C |
 | `size` | `+0x34` | Elements per inner iteration |
-| `op` | `+0x3C` | Operation code (0=Add … 5=Relu6, 6=Softmax) |
+| `op` | `+0x3C` | Operation code (0=Add … 5=Relu6) |
 | `outer` | `+0x44` | Number of broadcast outer iterations |
 | `a_inc` | `+0x4C` | Element stride between A rows |
 | `b_inc` | `+0x54` | Element stride between B rows (0 = broadcast) |
+| `act` | `+0x5C` | Fused activation after the op (0=none, 1=Relu, 2=Relu6) |
 
 ### Other Kernels
 
