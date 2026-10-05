@@ -1,9 +1,9 @@
 # CLAUDE.md — cormorant_hw_128
 
 Vivado 2025.2 block design project for the **Xilinx KV260 Starter Kit**
-(xck26-sfvc784-2LV-c). Instantiates four accelerator IP cores (three
-HLS-synthesized, the MatmulKernel in SystemVerilog) connected to the Zynq
-MPSoC PS via a 128-bit AXI bus.
+(xck26-sfvc784-2LV-c). Instantiates four accelerator IP cores (two
+HLS-synthesized, the MatmulKernel and the VectorOPKernel in SystemVerilog)
+connected to the Zynq MPSoC PS via a 128-bit AXI bus.
 
 ## What Lives Here
 

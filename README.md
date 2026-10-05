@@ -2,8 +2,8 @@
 
 Vivado 2025.2 block design for the **Xilinx KV260 Starter Kit**
 (xck26-sfvc784-2LV-c). Instantiates four neural-network accelerator IP
-cores (three HLS, the MatmulKernel in SystemVerilog) connected to the Zynq
-MPSoC PS via AXI.
+cores (two HLS, the MatmulKernel and the VectorOPKernel in SystemVerilog)
+connected to the Zynq MPSoC PS via AXI.
 
 This is the hardware sub-project of [Cormorant](https://github.com/GradeBuilderSL/cormorant)
 — an FPGA neural-network inference accelerator.
@@ -113,7 +113,7 @@ mirrors the kernel's fixed-point `poly_sqrt` bit for bit.
 
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
-| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6, fused Relu / Relu6 `act`) | `0xA000_0000` | gmem0–2 → `S_AXI_HPC0_FPD` |
+| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6, fused Relu / Relu6 `act`) — the parent repo's SystemVerilog kernel (`kernels/vectorop_rtl`, `make package_vectorop_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA000_0000` | gmem0–2 → `S_AXI_HPC0_FPD` |
 | `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming — the parent repo's SystemVerilog kernel (`kernels/matmul_rtl`, `make package_matmul_rtl`; same VLNV as the retired HLS one) | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
 | `ConvKernel_0` | 2-D convolution (NCHW) | `0xA002_0000` | gmem0, gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | Max/Avg/Lp/Global pooling | `0xA003_0000` | gmem0–1 → `S_AXI_HPC0_FPD` |
