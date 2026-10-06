@@ -153,8 +153,30 @@ proc run_synth {jobs} {
 # ---------------------------------------------------------------------------
 # Implementation + bitstream
 # ---------------------------------------------------------------------------
+# The implementation directives the 250 MHz kernel clock needs (the parent
+# repo's doc/plans/FMAX_250_PLAN.md): with the project's default strategy the
+# same netlist misses 4 ns by 61 ps, with these it closes.  Setting a changed
+# directive invalidates the run, so a stale result is re-implemented.
+proc set_impl_directives {run} {
+    set want {
+        STEPS.PLACE_DESIGN.ARGS.DIRECTIVE              ExtraTimingOpt
+        STEPS.PHYS_OPT_DESIGN.IS_ENABLED               1
+        STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE           AggressiveExplore
+        STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE              AggressiveExplore
+        STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED    1
+        STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore
+    }
+    foreach {p v} $want {
+        if {[get_property $p [get_runs $run]] ne $v} {
+            set_property $p $v [get_runs $run]
+            puts "=== $run: $p = $v ==="
+        }
+    }
+}
+
 proc run_impl {jobs} {
     set run impl_1
+    set_impl_directives $run
     set state [get_property STATUS [get_runs $run]]
     puts "=== Implementation: current status = $state ==="
 

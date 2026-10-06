@@ -17,18 +17,36 @@
       "PoolingKernel_0": "",
       "axi_interconnect_0": {
         "xbar": "",
-        "s00_couplers": {},
-        "s01_couplers": {},
-        "s02_couplers": {},
-        "s03_couplers": {},
-        "s04_couplers": {
-          "auto_us": ""
+        "s00_couplers": {
+          "s00_regslice": ""
         },
-        "s05_couplers": {},
-        "s06_couplers": {},
-        "s07_couplers": {},
-        "s08_couplers": {},
-        "m00_couplers": {}
+        "s01_couplers": {
+          "s01_regslice": ""
+        },
+        "s02_couplers": {
+          "s02_regslice": ""
+        },
+        "s03_couplers": {
+          "s03_regslice": ""
+        },
+        "s04_couplers": {
+          "s04_regslice": ""
+        },
+        "s05_couplers": {
+          "s05_regslice": ""
+        },
+        "s06_couplers": {
+          "s06_regslice": ""
+        },
+        "s07_couplers": {
+          "s07_regslice": ""
+        },
+        "s08_couplers": {
+          "s08_regslice": ""
+        },
+        "m00_couplers": {
+          "m00_regslice": ""
+        }
       },
       "zynq_ultra_ps_e_0": "",
       "ilconcat_0": "",
@@ -36,34 +54,30 @@
       "axi_smc": "",
       "axi_mem_intercon": {
         "xbar": "",
-        "s00_couplers": {},
-        "s01_couplers": {},
-        "s02_couplers": {},
+        "s00_couplers": {
+          "s00_regslice": ""
+        },
+        "s01_couplers": {
+          "s01_regslice": ""
+        },
+        "s02_couplers": {
+          "s02_regslice": ""
+        },
         "m00_couplers": {},
         "s00_mmu": "",
         "s01_mmu": "",
         "s02_mmu": ""
-      }
+      },
+      "clk_wiz_0": ""
     },
     "components": {
       "VectorOPKernel_0": {
         "vlnv": "xilinx.com:hls:VectorOPKernel:1.0",
-        "ip_revision": "2114802066",
+        "ip_revision": "2",
         "xci_name": "design_cormorant_VectorOPKernel_0_0",
         "xci_path": "ip/design_cormorant_VectorOPKernel_0_0/design_cormorant_VectorOPKernel_0_0.xci",
         "inst_hier_path": "VectorOPKernel_0",
         "has_run_ip_tcl": "true",
-        "parameters": {
-          "C_M_AXI_GMEM0_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM1_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM2_DATA_WIDTH": {
-            "value": "128"
-          }
-        },
         "interface_ports": {
           "m_axi_gmem0": {
             "bd_attributes": {
@@ -133,22 +147,11 @@
       },
       "MatmulKernel_0": {
         "vlnv": "xilinx.com:hls:MatmulKernel:1.0",
-        "ip_revision": "2114804863",
+        "ip_revision": "3",
         "xci_name": "design_cormorant_MatmulKernel_0_0",
         "xci_path": "ip/design_cormorant_MatmulKernel_0_0/design_cormorant_MatmulKernel_0_0.xci",
         "inst_hier_path": "MatmulKernel_0",
         "has_run_ip_tcl": "true",
-        "parameters": {
-          "C_M_AXI_GMEM0_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM1_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM2_DATA_WIDTH": {
-            "value": "32"
-          }
-        },
         "interface_ports": {
           "m_axi_gmem0": {
             "bd_attributes": {
@@ -218,25 +221,11 @@
       },
       "ConvKernel_0": {
         "vlnv": "xilinx.com:hls:ConvKernel:1.0",
-        "ip_revision": "2114802064",
+        "ip_revision": "2",
         "xci_name": "design_cormorant_ConvKernel_0_0",
         "xci_path": "ip/design_cormorant_ConvKernel_0_0/design_cormorant_ConvKernel_0_0.xci",
         "inst_hier_path": "ConvKernel_0",
         "has_run_ip_tcl": "true",
-        "parameters": {
-          "C_M_AXI_GMEM0_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM1_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM2_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM3_DATA_WIDTH": {
-            "value": "128"
-          }
-        },
         "interface_ports": {
           "m_axi_gmem0": {
             "bd_attributes": {
@@ -326,19 +315,11 @@
       },
       "PoolingKernel_0": {
         "vlnv": "xilinx.com:hls:PoolingKernel:1.0",
-        "ip_revision": "2114802066",
+        "ip_revision": "2",
         "xci_name": "design_cormorant_PoolingKernel_0_0",
         "xci_path": "ip/design_cormorant_PoolingKernel_0_0/design_cormorant_PoolingKernel_0_0.xci",
         "inst_hier_path": "PoolingKernel_0",
         "has_run_ip_tcl": "true",
-        "parameters": {
-          "C_M_AXI_GMEM0_DATA_WIDTH": {
-            "value": "128"
-          },
-          "C_M_AXI_GMEM1_DATA_WIDTH": {
-            "value": "128"
-          }
-        },
         "interface_ports": {
           "m_axi_gmem0": {
             "bd_attributes": {
@@ -392,11 +373,41 @@
         "inst_hier_path": "axi_interconnect_0",
         "xci_name": "design_cormorant_axi_interconnect_0_0",
         "parameters": {
+          "M00_HAS_REGSLICE": {
+            "value": "1"
+          },
           "NUM_MI": {
             "value": "1"
           },
           "NUM_SI": {
             "value": "9"
+          },
+          "S00_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S01_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S02_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S03_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S04_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S05_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S06_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S07_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S08_HAS_REGSLICE": {
+            "value": "1"
           },
           "XBAR_DATA_WIDTH": {
             "value": "128"
@@ -931,11 +942,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s00_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s00_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s00_regslice_0/design_cormorant_axi_interconnect_0_imp_s00_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s00_couplers/s00_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s00_couplers_to_s00_couplers": {
+              "s00_couplers_to_s00_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s00_regslice/S_AXI"
+                ]
+              },
+              "s00_regslice_to_s00_couplers": {
+                "interface_ports": [
+                  "s00_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s00_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s00_regslice/aresetn"
                 ]
               }
             }
@@ -999,11 +1067,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s01_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s01_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s01_regslice_0/design_cormorant_axi_interconnect_0_imp_s01_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s01_couplers/s01_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s01_couplers_to_s01_couplers": {
+              "s01_couplers_to_s01_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s01_regslice/S_AXI"
+                ]
+              },
+              "s01_regslice_to_s01_couplers": {
+                "interface_ports": [
+                  "s01_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s01_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s01_regslice/aresetn"
                 ]
               }
             }
@@ -1067,11 +1192,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s02_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s02_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s02_regslice_0/design_cormorant_axi_interconnect_0_imp_s02_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s02_couplers/s02_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s02_couplers_to_s02_couplers": {
+              "s02_couplers_to_s02_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s02_regslice/S_AXI"
+                ]
+              },
+              "s02_regslice_to_s02_couplers": {
+                "interface_ports": [
+                  "s02_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s02_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s02_regslice/aresetn"
                 ]
               }
             }
@@ -1135,11 +1317,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s03_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s03_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s03_regslice_0/design_cormorant_axi_interconnect_0_imp_s03_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s03_couplers/s03_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s03_couplers_to_s03_couplers": {
+              "s03_couplers_to_s03_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s03_regslice/S_AXI"
+                ]
+              },
+              "s03_regslice_to_s03_couplers": {
+                "interface_ports": [
+                  "s03_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s03_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s03_regslice/aresetn"
                 ]
               }
             }
@@ -1204,22 +1443,22 @@
               }
             },
             "components": {
-              "auto_us": {
-                "vlnv": "xilinx.com:ip:axi_dwidth_converter:2.1",
-                "ip_revision": "37",
-                "xci_name": "design_cormorant_axi_interconnect_0_imp_auto_us_0",
-                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_auto_us_0/design_cormorant_axi_interconnect_0_imp_auto_us_0.xci",
-                "inst_hier_path": "axi_interconnect_0/s04_couplers/auto_us",
+              "s04_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s04_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s04_regslice_0/design_cormorant_axi_interconnect_0_imp_s04_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s04_couplers/s04_regslice",
                 "has_run_ip_tcl": "true",
-                "parameters": {
-                  "MI_DATA_WIDTH": {
-                    "value": "128"
-                  },
-                  "SI_DATA_WIDTH": {
-                    "value": "32"
-                  }
-                },
                 "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
                   "S_AXI": {
                     "bd_attributes": {
                       "BRIDGES": {
@@ -1236,29 +1475,21 @@
                     "bridges": [
                       "M_AXI"
                     ]
-                  },
-                  "M_AXI": {
-                    "bd_attributes": {
-                      "TYPE": {
-                        "value": "interior",
-                        "value_src": "default"
-                      }
-                    }
                   }
                 }
               }
             },
             "interface_nets": {
-              "auto_us_to_s04_couplers": {
-                "interface_ports": [
-                  "M_AXI",
-                  "auto_us/M_AXI"
-                ]
-              },
-              "s04_couplers_to_auto_us": {
+              "s04_couplers_to_s04_regslice": {
                 "interface_ports": [
                   "S_AXI",
-                  "auto_us/S_AXI"
+                  "s04_regslice/S_AXI"
+                ]
+              },
+              "s04_regslice_to_s04_couplers": {
+                "interface_ports": [
+                  "s04_regslice/M_AXI",
+                  "M_AXI"
                 ]
               }
             },
@@ -1266,13 +1497,13 @@
               "S_ACLK_1": {
                 "ports": [
                   "S_ACLK",
-                  "auto_us/s_axi_aclk"
+                  "s04_regslice/aclk"
                 ]
               },
               "S_ARESETN_1": {
                 "ports": [
                   "S_ARESETN",
-                  "auto_us/s_axi_aresetn"
+                  "s04_regslice/aresetn"
                 ]
               }
             }
@@ -1336,11 +1567,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s05_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s05_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s05_regslice_0/design_cormorant_axi_interconnect_0_imp_s05_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s05_couplers/s05_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s05_couplers_to_s05_couplers": {
+              "s05_couplers_to_s05_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s05_regslice/S_AXI"
+                ]
+              },
+              "s05_regslice_to_s05_couplers": {
+                "interface_ports": [
+                  "s05_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s05_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s05_regslice/aresetn"
                 ]
               }
             }
@@ -1404,11 +1692,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s06_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s06_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s06_regslice_0/design_cormorant_axi_interconnect_0_imp_s06_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s06_couplers/s06_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s06_couplers_to_s06_couplers": {
+              "s06_couplers_to_s06_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s06_regslice/S_AXI"
+                ]
+              },
+              "s06_regslice_to_s06_couplers": {
+                "interface_ports": [
+                  "s06_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s06_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s06_regslice/aresetn"
                 ]
               }
             }
@@ -1472,11 +1817,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s07_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s07_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s07_regslice_0/design_cormorant_axi_interconnect_0_imp_s07_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s07_couplers/s07_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s07_couplers_to_s07_couplers": {
+              "s07_couplers_to_s07_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s07_regslice/S_AXI"
+                ]
+              },
+              "s07_regslice_to_s07_couplers": {
+                "interface_ports": [
+                  "s07_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s07_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s07_regslice/aresetn"
                 ]
               }
             }
@@ -1540,11 +1942,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s08_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_s08_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_s08_regslice_0/design_cormorant_axi_interconnect_0_imp_s08_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/s08_couplers/s08_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s08_couplers_to_s08_couplers": {
+              "s08_couplers_to_s08_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s08_regslice/S_AXI"
+                ]
+              },
+              "s08_regslice_to_s08_couplers": {
+                "interface_ports": [
+                  "s08_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s08_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s08_regslice/aresetn"
                 ]
               }
             }
@@ -1608,11 +2067,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "m00_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_interconnect_0_imp_m00_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_interconnect_0_imp_m00_regslice_0/design_cormorant_axi_interconnect_0_imp_m00_regslice_0.xci",
+                "inst_hier_path": "axi_interconnect_0/m00_couplers/m00_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "m00_couplers_to_m00_couplers": {
+              "m00_couplers_to_m00_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "m00_regslice/S_AXI"
+                ]
+              },
+              "m00_regslice_to_m00_couplers": {
+                "interface_ports": [
+                  "m00_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "M_ACLK_1": {
+                "ports": [
+                  "M_ACLK",
+                  "m00_regslice/aclk"
+                ]
+              },
+              "M_ARESETN_1": {
+                "ports": [
+                  "M_ARESETN",
+                  "m00_regslice/aresetn"
                 ]
               }
             }
@@ -4679,6 +5195,9 @@
           "PSU__USE_DIFF_RW_CLK_GP0": {
             "value": "0"
           },
+          "PSU__USE_DIFF_RW_CLK_GP1": {
+            "value": "0"
+          },
           "PSU__USE__ADMA": {
             "value": "0"
           },
@@ -5181,11 +5700,23 @@
         "inst_hier_path": "axi_mem_intercon",
         "xci_name": "design_cormorant_axi_mem_intercon_0",
         "parameters": {
+          "M00_HAS_REGSLICE": {
+            "value": "0"
+          },
           "NUM_MI": {
             "value": "1"
           },
           "NUM_SI": {
             "value": "3"
+          },
+          "S00_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S01_HAS_REGSLICE": {
+            "value": "1"
+          },
+          "S02_HAS_REGSLICE": {
+            "value": "1"
           },
           "STRATEGY": {
             "value": "0"
@@ -5459,11 +5990,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s00_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_mem_intercon_imp_s00_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_mem_intercon_imp_s00_regslice_0/design_cormorant_axi_mem_intercon_imp_s00_regslice_0.xci",
+                "inst_hier_path": "axi_mem_intercon/s00_couplers/s00_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s00_couplers_to_s00_couplers": {
+              "s00_couplers_to_s00_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s00_regslice/S_AXI"
+                ]
+              },
+              "s00_regslice_to_s00_couplers": {
+                "interface_ports": [
+                  "s00_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s00_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s00_regslice/aresetn"
                 ]
               }
             }
@@ -5527,11 +6115,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s01_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_mem_intercon_imp_s01_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_mem_intercon_imp_s01_regslice_0/design_cormorant_axi_mem_intercon_imp_s01_regslice_0.xci",
+                "inst_hier_path": "axi_mem_intercon/s01_couplers/s01_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s01_couplers_to_s01_couplers": {
+              "s01_couplers_to_s01_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s01_regslice/S_AXI"
+                ]
+              },
+              "s01_regslice_to_s01_couplers": {
+                "interface_ports": [
+                  "s01_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s01_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s01_regslice/aresetn"
                 ]
               }
             }
@@ -5595,11 +6240,68 @@
                 "direction": "I"
               }
             },
+            "components": {
+              "s02_regslice": {
+                "vlnv": "xilinx.com:ip:axi_register_slice:2.1",
+                "ip_revision": "36",
+                "xci_name": "design_cormorant_axi_mem_intercon_imp_s02_regslice_0",
+                "xci_path": "ip/design_cormorant_axi_mem_intercon_imp_s02_regslice_0/design_cormorant_axi_mem_intercon_imp_s02_regslice_0.xci",
+                "inst_hier_path": "axi_mem_intercon/s02_couplers/s02_regslice",
+                "has_run_ip_tcl": "true",
+                "interface_ports": {
+                  "M_AXI": {
+                    "bd_attributes": {
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    }
+                  },
+                  "S_AXI": {
+                    "bd_attributes": {
+                      "BRIDGES": {
+                        "value": "M_AXI",
+                        "value_src": "auto"
+                      },
+                      "TYPE": {
+                        "value": "interior",
+                        "value_src": "default"
+                      }
+                    },
+                    "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+                    "mode": "Slave",
+                    "bridges": [
+                      "M_AXI"
+                    ]
+                  }
+                }
+              }
+            },
             "interface_nets": {
-              "s02_couplers_to_s02_couplers": {
+              "s02_couplers_to_s02_regslice": {
                 "interface_ports": [
                   "S_AXI",
+                  "s02_regslice/S_AXI"
+                ]
+              },
+              "s02_regslice_to_s02_couplers": {
+                "interface_ports": [
+                  "s02_regslice/M_AXI",
                   "M_AXI"
+                ]
+              }
+            },
+            "nets": {
+              "S_ACLK_1": {
+                "ports": [
+                  "S_ACLK",
+                  "s02_regslice/aclk"
+                ]
+              },
+              "S_ARESETN_1": {
+                "ports": [
+                  "S_ARESETN",
+                  "s02_regslice/aresetn"
                 ]
               }
             }
@@ -5882,6 +6584,34 @@
             ]
           }
         }
+      },
+      "clk_wiz_0": {
+        "vlnv": "xilinx.com:ip:clk_wiz:6.0",
+        "ip_revision": "17",
+        "xci_name": "design_cormorant_clk_wiz_0_0",
+        "xci_path": "ip/design_cormorant_clk_wiz_0_0/design_cormorant_clk_wiz_0_0.xci",
+        "inst_hier_path": "clk_wiz_0",
+        "has_run_ip_tcl": "true",
+        "parameters": {
+          "CLKOUT1_REQUESTED_OUT_FREQ": {
+            "value": "250"
+          },
+          "PRIM_SOURCE": {
+            "value": "No_buffer"
+          },
+          "RESET_PORT": {
+            "value": "resetn"
+          },
+          "RESET_TYPE": {
+            "value": "ACTIVE_LOW"
+          },
+          "USE_LOCKED": {
+            "value": "true"
+          },
+          "USE_RESET": {
+            "value": "true"
+          }
+        }
       }
     },
     "interface_nets": {
@@ -6025,6 +6755,42 @@
           "ilconcat_0/In0"
         ]
       },
+      "clk_wiz_0_clk_out1": {
+        "ports": [
+          "clk_wiz_0/clk_out1",
+          "axi_interconnect_0/ACLK",
+          "rst_ps8_0_99M/slowest_sync_clk",
+          "axi_interconnect_0/M00_ACLK",
+          "zynq_ultra_ps_e_0/saxihpc0_fpd_aclk",
+          "axi_interconnect_0/S00_ACLK",
+          "axi_interconnect_0/S01_ACLK",
+          "axi_interconnect_0/S02_ACLK",
+          "axi_interconnect_0/S03_ACLK",
+          "axi_interconnect_0/S04_ACLK",
+          "axi_interconnect_0/S05_ACLK",
+          "axi_interconnect_0/S06_ACLK",
+          "axi_interconnect_0/S07_ACLK",
+          "axi_interconnect_0/S08_ACLK",
+          "axi_smc/aclk",
+          "zynq_ultra_ps_e_0/maxihpm0_fpd_aclk",
+          "axi_mem_intercon/S00_ACLK",
+          "zynq_ultra_ps_e_0/saxihpc1_fpd_aclk",
+          "axi_mem_intercon/M00_ACLK",
+          "axi_mem_intercon/ACLK",
+          "axi_mem_intercon/S01_ACLK",
+          "axi_mem_intercon/S02_ACLK",
+          "ConvKernel_0/ap_clk",
+          "MatmulKernel_0/ap_clk",
+          "PoolingKernel_0/ap_clk",
+          "VectorOPKernel_0/ap_clk"
+        ]
+      },
+      "clk_wiz_0_locked": {
+        "ports": [
+          "clk_wiz_0/locked",
+          "rst_ps8_0_99M/dcm_locked"
+        ]
+      },
       "ilconcat_0_dout": {
         "ports": [
           "ilconcat_0/dout",
@@ -6052,45 +6818,22 @@
           "axi_mem_intercon/S01_ARESETN",
           "axi_mem_intercon/S02_ARESETN",
           "ConvKernel_0/ap_rst_n",
+          "MatmulKernel_0/ap_rst_n",
           "PoolingKernel_0/ap_rst_n",
-          "VectorOPKernel_0/ap_rst_n",
-          "MatmulKernel_0/ap_rst_n"
+          "VectorOPKernel_0/ap_rst_n"
         ]
       },
       "zynq_ultra_ps_e_0_pl_clk0": {
         "ports": [
           "zynq_ultra_ps_e_0/pl_clk0",
-          "axi_interconnect_0/ACLK",
-          "rst_ps8_0_99M/slowest_sync_clk",
-          "axi_interconnect_0/M00_ACLK",
-          "zynq_ultra_ps_e_0/saxihpc0_fpd_aclk",
-          "axi_interconnect_0/S00_ACLK",
-          "axi_interconnect_0/S01_ACLK",
-          "axi_interconnect_0/S02_ACLK",
-          "axi_interconnect_0/S03_ACLK",
-          "axi_interconnect_0/S04_ACLK",
-          "axi_interconnect_0/S05_ACLK",
-          "axi_interconnect_0/S06_ACLK",
-          "axi_interconnect_0/S07_ACLK",
-          "axi_interconnect_0/S08_ACLK",
-          "axi_smc/aclk",
-          "zynq_ultra_ps_e_0/maxihpm0_fpd_aclk",
-          "axi_mem_intercon/S00_ACLK",
-          "zynq_ultra_ps_e_0/saxihpc1_fpd_aclk",
-          "axi_mem_intercon/M00_ACLK",
-          "axi_mem_intercon/ACLK",
-          "axi_mem_intercon/S01_ACLK",
-          "axi_mem_intercon/S02_ACLK",
-          "ConvKernel_0/ap_clk",
-          "PoolingKernel_0/ap_clk",
-          "VectorOPKernel_0/ap_clk",
-          "MatmulKernel_0/ap_clk"
+          "clk_wiz_0/clk_in1"
         ]
       },
       "zynq_ultra_ps_e_0_pl_resetn0": {
         "ports": [
           "zynq_ultra_ps_e_0/pl_resetn0",
-          "rst_ps8_0_99M/ext_reset_in"
+          "rst_ps8_0_99M/ext_reset_in",
+          "clk_wiz_0/resetn"
         ]
       }
     },
@@ -6418,30 +7161,22 @@
               "SEG_ConvKernel_0_Reg": {
                 "address_block": "/ConvKernel_0/s_axi_ctrl/Reg",
                 "offset": "0x00A0020000",
-                "range": "64K",
-                "offset_base_param": "C_S_AXI_CTRL_BASEADDR",
-                "offset_high_param": "C_S_AXI_CTRL_HIGHADDR"
+                "range": "64K"
               },
               "SEG_MatmulKernel_0_Reg": {
                 "address_block": "/MatmulKernel_0/s_axi_ctrl/Reg",
                 "offset": "0x00A0010000",
-                "range": "64K",
-                "offset_base_param": "C_S_AXI_CTRL_BASEADDR",
-                "offset_high_param": "C_S_AXI_CTRL_HIGHADDR"
+                "range": "64K"
               },
               "SEG_PoolingKernel_0_Reg": {
                 "address_block": "/PoolingKernel_0/s_axi_ctrl/Reg",
                 "offset": "0x00A0030000",
-                "range": "64K",
-                "offset_base_param": "C_S_AXI_CTRL_BASEADDR",
-                "offset_high_param": "C_S_AXI_CTRL_HIGHADDR"
+                "range": "64K"
               },
               "SEG_VectorOPKernel_0_Reg": {
                 "address_block": "/VectorOPKernel_0/s_axi_ctrl/Reg",
                 "offset": "0x00A0000000",
-                "range": "64K",
-                "offset_base_param": "C_S_AXI_CTRL_BASEADDR",
-                "offset_high_param": "C_S_AXI_CTRL_HIGHADDR"
+                "range": "64K"
               }
             }
           }

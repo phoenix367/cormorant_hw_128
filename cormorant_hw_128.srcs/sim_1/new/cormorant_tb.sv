@@ -63,6 +63,12 @@ module cormorant_tb;
     initial begin
         `PS.set_stop_on_error(1);
         `PS.set_debug_level_info(1);
+        // The PS AXI ports are clocked by the MMCM, which pl_resetn0 holds in
+        // reset: during the PL reset pulse their clocks do not toggle, and the
+        // VIPs' 16-cycle ARESETN check would report a pulse of 0 cycles.
+        `PS.M_AXI_HPM0_FPD.master.IF.set_xilinx_reset_check_to_warn();
+        `PS.S_AXI_HPC0_FPD.slave.IF.set_xilinx_reset_check_to_warn();
+        `PS.S_AXI_HPC1_FPD.slave.IF.set_xilinx_reset_check_to_warn();
 
         // POR + system reset, then PL fabric reset.
         `PS.por_srstb_reset(1'b0);   // assert  → DDR model enters reset
@@ -71,6 +77,19 @@ module cormorant_tb;
         `PS.por_srstb_reset(1'b1);   // deassert → DDR model comes up cleanly
         #800;
         `PS.fpga_soft_reset(32'h0);  // deassert PL resets → interconnect starts
+        // The PL clock comes from clk_wiz_0 (the parent repo's
+        // FMAX_250_PLAN): rst_ps8_0_99M holds the design in reset until the
+        // MMCM locks, so wait for the reset release, not a fixed delay.  (The
+        // BD's Verilog net: an index into the VHDL reset block's port does
+        // not wake a wait in xsim.)
+        fork
+            wait (dut.rst_ps8_0_99M_peripheral_aresetn[0] === 1'b1);
+            begin
+                #200us;
+                $fatal(1, "PL reset not released 200 us after fpga_soft_reset (MMCM not locked?)");
+            end
+        join_any
+        disable fork;
         #900;
 
         // BEST_CASE (fixed 21-cycle) write-response latency on HPC0_FPD.

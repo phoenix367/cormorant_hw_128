@@ -15,7 +15,8 @@ exports) connected to the Zynq MPSoC PS via a 128-bit AXI bus.
 | `cormorant_hw_128.srcs/sources_1/bd/design_cormorant/ip/*/` | IP core configurations (`.xci`) |
 | `cormorant_hw_128.srcs/sim_1/new/` | Simulation testbench (SystemVerilog) |
 | `cormorant_tb_behav.wcfg` | Waveform configuration for Vivado simulator |
-| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`) |
+| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`, `bd_kernel_clock.tcl`) |
+| `cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` | Timing constraints of the 250 MHz kernel clock |
 
 Generated directories (`*.runs/`, `*.gen/`, `*.ip_user_files/`, `*.sim/`,
 `*.cache/`, `*.hw/`) are excluded from git — regenerate them by opening the
@@ -38,11 +39,31 @@ The kernel data masters are aggregated through `axi_interconnect_0` (into
 AXI-Lite control ports go from `M_AXI_HPM0_FPD` through the `axi_smc`
 SmartConnect. Each kernel drives an interrupt line back to the PS.
 
+**Clock (since 2026-10-06, the parent repo's `doc/plans/FMAX_250_PLAN.md`).**
+Everything in the PL — the four kernels, both interconnects, the SmartConnect,
+the PS-PL AXI port clocks (`maxihpm0_fpd_aclk`, `saxihpc0/1_fpd_aclk`) and the
+reset block — runs on `clk_wiz_0/clk_out1`, **250 MHz** (249.9975: an MMCM
+fed by `pl_clk0`, which stays at the boot firmware's 100 MHz).  The bitstream
+thus defines its own kernel clock; PL0 only feeds the MMCM, and the parent
+repo's loader checks it against the HWH's 100 MHz before programming (and
+sets it when it differs), so a stale PL0 setting can neither change the
+kernel clock nor overclock an older 100 MHz bitstream.
+`pl_resetn0` resets the MMCM; its `locked` holds `rst_ps8_0_99M`
+(`dcm_locked`).  The two data interconnects carry register slices ("Outer")
+on every SI and on `axi_interconnect_0`'s MI (the read-only HPC1 MI has
+none); `cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` replicates the
+HPC0 slice's ready.  `scripts/bd_kernel_clock.tcl` makes all of it from the
+100 MHz design (idempotent), and `scripts/build.tcl` runs impl_1 with
+`place_design ExtraTimingOpt`, `phys_opt_design` / `route_design`
+`AggressiveExplore` and post-route `phys_opt_design` — with the project's
+default strategy the same netlist missed 4 ns by tens of ps.  Routed:
+WNS +0.105 ns, WHS +0.010 ns (bitstream `986cef4866a0`).
+
 Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
 `S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
 B); `axi_interconnect_0` → HPC0 keeps the other nine data masters.  It was
-neutral at 100 MHz (all layers compute-bound) and is kept for the 150 MHz
-step.  When moving a master between ports in Tcl, delete its stale
+neutral at 100 MHz (all layers compute-bound) and is kept for the 250 MHz
+clock.  When moving a master between ports in Tcl, delete its stale
 `SEG_*` address segments first or `assign_bd_address` collides.
 
 Until 2026-09-24 every kernel instance and `S_AXI_HPC0_FPD` were in fact
@@ -223,6 +244,13 @@ The testbench `ELEM_BYTES` localparam and the fixed-point helpers in
 
 ## Key Simulation Notes
 
+- **Reset release with the MMCM** (since the 250 MHz clock): the PL is held
+  in reset until `clk_wiz_0` locks, so `cormorant_tb.sv` waits for the BD's
+  Verilog net `rst_ps8_0_99M_peripheral_aresetn` (an index into the VHDL
+  reset block's port never wakes a `wait` in xsim) with a 200 µs timeout;
+  the MMCM locks within 10 µs.  The PS VIPs' 16-cycle ARESETN check is a
+  warning: their port clocks come from the MMCM, which `pl_resetn0` holds in
+  reset, so they do not toggle during the reset pulse.
 - **PS VIP slave profile**: set to `BEST_CASE` (fixed 21-cycle write-response
   latency) on `S_AXI_HPC0_FPD` for deterministic simulation timing.
 - **DDRC write-commit workaround** (`tb_infra.svh`): the PS VIP `arb_wr_6`
