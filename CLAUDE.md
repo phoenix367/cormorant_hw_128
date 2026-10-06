@@ -2,9 +2,9 @@
 
 Vivado 2025.2 block design project for the **Xilinx KV260 Starter Kit**
 (xck26-sfvc784-2LV-c). Instantiates four accelerator IP cores (the
-ConvKernel HLS-synthesized; the MatmulKernel, the VectorOPKernel and the
-PoolingKernel in SystemVerilog) connected to the Zynq MPSoC PS via a
-128-bit AXI bus.
+ConvKernel, the MatmulKernel, the VectorOPKernel and the PoolingKernel, all
+in SystemVerilog since 2026-10-06; the VLNVs of the retired Vitis HLS
+exports) connected to the Zynq MPSoC PS via a 128-bit AXI bus.
 
 ## What Lives Here
 
@@ -68,11 +68,12 @@ instance's old value.
 dropped a register that had just been added to MatmulKernel's AXI-Lite
 block (`b_packed`, 0x6C) although the HWH, drivers and generated HDL all
 had it — the board then silently ran the old control block.  Keep
-`INCREMENTAL_CHECKPOINT` empty; after any HLS IP change verify a new
+`INCREMENTAL_CHECKPOINT` empty; after any kernel IP change verify a new
 register on the board with a write-then-read before trusting results.
 
-The `_128` suffix indicates 128-bit (`m_axi` DATA_WIDTH=128) HLS synthesis for
-all four kernels, which doubles DDR bandwidth versus the 64-bit default.
+The `_128` suffix indicates the 128-bit (`m_axi` DATA_WIDTH=128) data ports of
+all four kernels (once a Vitis HLS synthesis option, now the RTL IPs' fixed
+width), which doubles DDR bandwidth versus the 64-bit default.
 
 ## Synthesis and Implementation
 
