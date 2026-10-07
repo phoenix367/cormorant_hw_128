@@ -18,6 +18,7 @@ localparam [39:0] REG_OUTER   = CTRL_BASE + 40'h44;
 localparam [39:0] REG_A_INC   = CTRL_BASE + 40'h4c;
 localparam [39:0] REG_B_INC   = CTRL_BASE + 40'h54;
 localparam [39:0] REG_ACT     = CTRL_BASE + 40'h5c;
+localparam [39:0] REG_ALPHA   = CTRL_BASE + 40'h64;   // LeakyReLU slope, alpha[15:0] / 65536
 
 // Op codes — must match VectorOP.h
 localparam [31:0] OP_ADD     = 32'd0;
@@ -26,11 +27,20 @@ localparam [31:0] OP_MUL     = 32'd2;
 localparam [31:0] OP_DIV     = 32'd3;
 localparam [31:0] OP_RELU    = 32'd4;
 localparam [31:0] OP_RELU6   = 32'd5;
+// The activation ops (unary; the act register is not applied after them)
+localparam [31:0] OP_LEAKY_RELU = 32'd6;
+localparam [31:0] OP_SILU       = 32'd7;
+localparam [31:0] OP_GELU       = 32'd8;
+localparam [31:0] OP_GELU_TANH  = 32'd9;
 
 // Fused activation after the op (register act) — must match VectorOP.h Act
 localparam [31:0] ACT_NONE   = 32'd0;
 localparam [31:0] ACT_RELU   = 32'd1;
 localparam [31:0] ACT_RELU6  = 32'd2;
+localparam [31:0] ACT_LEAKY_RELU = 32'd3;
+localparam [31:0] ACT_SILU       = 32'd4;
+localparam [31:0] ACT_GELU       = 32'd5;
+localparam [31:0] ACT_GELU_TANH  = 32'd6;
 
 // DDR buffer layout for VectorOP tests (40-bit PS address space)
 localparam [39:0] DDR_BASE   = 40'h1000_0000;

@@ -57,7 +57,9 @@ HPC0 slice's ready.  `scripts/bd_kernel_clock.tcl` makes all of it from the
 `place_design ExtraTimingOpt`, `phys_opt_design` / `route_design`
 `AggressiveExplore` and post-route `phys_opt_design` — with the project's
 default strategy the same netlist missed 4 ns by tens of ps.  Routed:
-WNS +0.105 ns, WHS +0.010 ns (bitstream `986cef4866a0`).
+WNS +0.105 ns, WHS +0.010 ns (bitstream `986cef4866a0`); with VectorOPKernel's
+activation unit (the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) WNS
++0.061 ns, WHS +0.010 ns (bitstream `6436623029f7`, production).
 
 Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
 `S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
@@ -181,12 +183,12 @@ The testbench prints a per-kernel pass/fail table and a combined summary
 ##########################################################
 ##  CORMORANT TESTBENCH — OVERALL RESULTS
 ##########################################################
-##        VectorOPKernel   22 /  22  (0 failed)
+##        VectorOPKernel   27 /  27  (0 failed)
 ##            ConvKernel   17 /  17  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
 ##########################################################
-##  TOTAL: 68 / 68 passed
+##  TOTAL: 73 / 73 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
@@ -223,11 +225,12 @@ This reads `design_cormorant.hwh` and overwrites `cormorant_addr_map.svh`.
 | `b_lo/hi` | `+0x1C/20` | 64-bit DDR address of input B (ignored for unary) |
 | `c_lo/hi` | `+0x28/2C` | 64-bit DDR address of output C |
 | `size` | `+0x34` | Elements per inner iteration |
-| `op` | `+0x3C` | Operation code (0=Add … 5=Relu6) |
+| `op` | `+0x3C` | Operation code (0=Add … 5=Relu6, 6=LeakyRelu, 7=SiLU, 8=GELU, 9=GELU tanh) |
 | `outer` | `+0x44` | Number of broadcast outer iterations |
 | `a_inc` | `+0x4C` | Element stride between A rows |
 | `b_inc` | `+0x54` | Element stride between B rows (0 = broadcast) |
-| `act` | `+0x5C` | Fused activation after the op (0=none, 1=Relu, 2=Relu6) |
+| `act` | `+0x5C` | Fused activation after the op (0=none, 1=Relu, 2=Relu6, 3=LeakyRelu, 4=SiLU, 5=GELU, 6=GELU tanh) |
+| `alpha` | `+0x64` | LeakyRelu slope, bits 15:0 / 65536 (IPs with the activation unit: the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) |
 
 ### Other Kernels
 

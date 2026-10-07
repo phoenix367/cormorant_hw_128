@@ -89,7 +89,7 @@ function automatic logic [15:0] compute_ref(
         OP_DIV:   r = ref_div(a, b);
         OP_RELU:  r = ref_relu(a);
         OP_RELU6: r = ref_relu6(a);
-        default:  r = 16'hXXXX;
+        default:  r = 16'hXXXX;             // the activation ops: vop_item.set_exp_row
     endcase
     case (act)
         ACT_RELU:  return ref_relu(r);

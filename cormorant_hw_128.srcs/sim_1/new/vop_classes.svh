@@ -10,14 +10,15 @@ class vop_item;
     int unsigned outer;   // number of broadcast iterations
     int unsigned a_inc;   // element stride between A-row starts
     int unsigned b_inc;   // element stride between B-row starts (0 = broadcast)
-    logic [31:0] act;     // fused activation after the op (ACT_NONE / RELU / RELU6)
+    logic [31:0] act;     // fused activation after the op (Act code, ACT_NONE = 0)
+    logic [31:0] alpha;   // LeakyReLU slope, alpha[15:0] / 65536
 
     // a_fills[i] / b_fills[i]: fill value per outer row (length == outer).
     logic [15:0] a_fills[];
     logic [15:0] b_fills[];
 
     logic [39:0] addr_a;
-    logic [39:0] addr_b;   // 40'h0 for unary ops (RELU, RELU6)
+    logic [39:0] addr_b;   // 40'h0 for unary ops (op >= RELU)
     logic [39:0] addr_c;
 
     // Expected C value per outer row; all `size` elements in a row are equal.
@@ -32,7 +33,8 @@ class vop_item;
         int unsigned b_inc_  = 0,
         logic [15:0] a_val   = 16'h0100,
         logic [15:0] b_val_  = 16'h0000,
-        logic [31:0] act_    = ACT_NONE
+        logic [31:0] act_    = ACT_NONE,
+        logic [31:0] alpha_  = 32'h0
     );
         this.label  = lbl;
         this.op     = op_;
@@ -41,8 +43,9 @@ class vop_item;
         this.a_inc  = a_inc_;
         this.b_inc  = b_inc_;
         this.act    = act_;
+        this.alpha  = alpha_;
         this.addr_a = BUF_A;
-        this.addr_b = (op_ == OP_RELU || op_ == OP_RELU6) ? 40'h0 : BUF_B;
+        this.addr_b = (op_ >= OP_RELU) ? 40'h0 : BUF_B;
         this.addr_c = BUF_C;
 
         a_fills = new[outer_];
@@ -65,10 +68,16 @@ class vop_item;
         exp_c[row]   = compute_ref(op, a_fills[row], val, act);
     endfunction
 
+    // The SiLU / GELU / LeakyReLU results compute_ref does not model: the
+    // expected value of a row, taken from the C++ model (VectorOP.h).
+    function void set_exp_row(int unsigned row, logic [15:0] val);
+        exp_c[row] = val;
+    endfunction
+
     function string to_string();
         return $sformatf(
-            "%-16s  op=%0d act=%0d size=%0d outer=%0d a_inc=%0d b_inc=%0d  a[0]=0x%04h b[0]=0x%04h  exp[0]=0x%04h",
-            label, op, act, size, outer, a_inc, b_inc, a_fills[0], b_fills[0], exp_c[0]);
+            "%-16s  op=%0d act=%0d alpha=0x%0h size=%0d outer=%0d a_inc=%0d b_inc=%0d  a[0]=0x%04h b[0]=0x%04h  exp[0]=0x%04h",
+            label, op, act, alpha, size, outer, a_inc, b_inc, a_fills[0], b_fills[0], exp_c[0]);
     endfunction
 endclass
 
@@ -137,6 +146,7 @@ class vop_driver extends axil_agent;
         axil_write(REG_A_INC, 32'(item.a_inc));
         axil_write(REG_B_INC, 32'(item.b_inc));
         axil_write(REG_ACT,   item.act);        // always: registers persist between tests
+        axil_write(REG_ALPHA, item.alpha);
         axil_write(REG_GIE,     32'h1);
         axil_write(REG_IER,     32'h1);
         $display("[%0t][VOP_DRV] Asserting ap_start ...", $time);
@@ -274,7 +284,7 @@ class vop_env;
 endclass
 
 // =========================================================================
-// vop_test — 22 test cases covering all ops, fused activations, saturation,
+// vop_test — 27 test cases covering all ops, fused activations, saturation,
 // and broadcasting.  Alignment contract (VectorOP.h): every run start of a,
 // b, c is 16-byte aligned, so a_inc / b_inc are 0 or multiples of 8 elements.
 //
@@ -288,6 +298,9 @@ endclass
 //   sat+:    0x6400+0x6400=0xC800 > 0x7FFF → 0x7FFF
 //   sat-:    0xFE00×0x6400=-512×25600=-13107200; >>>8=-51200 → 0x8000
 //   act:     ADD 1.0 + -2.0 = -1.0 → relu 0x0000;  ADD 4.0 + 4.0 = 8.0 → relu6 0x0600
+//   activation unit (round to nearest, ties to even): GELU(1.0) = 0.8413 → 0x00D7;
+//            SiLU(-1.0, 2.5, 9.0) → 0xFFBB, 0x024F, 0x0900;  LeakyReLU(-2.0, alpha
+//            0x199A = 0.1) = -0.2000 → 0xFFCD;  GELU_tanh(0.5) → 0x0059;  SiLU(1.5) → 0x013A
 // =========================================================================
 class vop_test;
     vop_env        e;
@@ -391,6 +404,32 @@ class vop_test;
         tests.push_back(it);
         it = new("add_act_relu6", OP_ADD, 8, .a_val(16'h0400), .b_val_(16'h0400),
                  .act_(ACT_RELU6));
+        tests.push_back(it);
+
+        // ---- Activation unit: SiLU / GELU / LeakyReLU (expected values from
+        // the C++ model: round to nearest, ties to even) -----------------------
+        it = new("gelu_op", OP_GELU, 16, .a_val(16'h0100));            // GELU(1.0)
+        it.set_exp_row(0, 16'h00D7);
+        tests.push_back(it);
+        it = new("silu_bcast", OP_SILU, 4, /*outer*/3, /*a_inc*/8, /*b_inc*/0,
+                 16'hFF00);                                             // -1.0, 2.5, 9.0
+        it.set_a_row(1, 16'h0280);
+        it.set_a_row(2, 16'h0900);
+        it.set_exp_row(0, 16'hFFBB);
+        it.set_exp_row(1, 16'h024F);
+        it.set_exp_row(2, 16'h0900);
+        tests.push_back(it);
+        it = new("leaky_op", OP_LEAKY_RELU, 8, .a_val(16'hFE00),
+                 .alpha_(32'h0000_199A));                               // -2.0 x 0.1
+        it.set_exp_row(0, 16'hFFCD);
+        tests.push_back(it);
+        it = new("add_act_gelu_t", OP_ADD, 8, .a_val(16'h0100), .b_val_(16'hFF80),
+                 .act_(ACT_GELU_TANH));                                 // GELU_tanh(0.5)
+        it.set_exp_row(0, 16'h0059);
+        tests.push_back(it);
+        it = new("div_act_silu", OP_DIV, 8, .a_val(16'h0300), .b_val_(16'h0200),
+                 .act_(ACT_SILU));                                      // SiLU(1.5)
+        it.set_exp_row(0, 16'h013A);
         tests.push_back(it);
 
         // ---- Run all tests ----------------------------------------------
