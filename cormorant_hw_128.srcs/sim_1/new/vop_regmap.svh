@@ -19,6 +19,9 @@ localparam [39:0] REG_A_INC   = CTRL_BASE + 40'h4c;
 localparam [39:0] REG_B_INC   = CTRL_BASE + 40'h54;
 localparam [39:0] REG_ACT     = CTRL_BASE + 40'h5c;
 localparam [39:0] REG_ALPHA   = CTRL_BASE + 40'h64;   // LeakyReLU slope, alpha[15:0] / 65536
+localparam [39:0] REG_SMX_CM   = CTRL_BASE + 40'h6c;  // softmax: Cm [23:0]
+localparam [39:0] REG_SMX_CFG  = CTRL_BASE + 40'h74;  // softmax: Cs [5:0], f_p [12:8]
+localparam [39:0] REG_SMX_MASK = CTRL_BASE + 40'h7c;  // softmax: valid0 [15:0], period [31:16]
 
 // Op codes — must match VectorOP.h
 localparam [31:0] OP_ADD     = 32'd0;
@@ -32,6 +35,10 @@ localparam [31:0] OP_LEAKY_RELU = 32'd6;
 localparam [31:0] OP_SILU       = 32'd7;
 localparam [31:0] OP_GELU       = 32'd8;
 localparam [31:0] OP_GELU_TANH  = 32'd9;
+// Softmax (unary; c advances by b_inc): row mode, and column mode (input
+// s[size keys][outer queries] at row stride a_inc, outer & ~15 output rows)
+localparam [31:0] OP_SOFTMAX    = 32'd10;
+localparam [31:0] OP_SOFTMAX_T  = 32'd11;
 
 // Fused activation after the op (register act) — must match VectorOP.h Act
 localparam [31:0] ACT_NONE   = 32'd0;

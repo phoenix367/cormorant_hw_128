@@ -12,6 +12,9 @@ class vop_item;
     int unsigned b_inc;   // element stride between B-row starts (0 = broadcast)
     logic [31:0] act;     // fused activation after the op (Act code, ACT_NONE = 0)
     logic [31:0] alpha;   // LeakyReLU slope, alpha[15:0] / 65536
+    logic [31:0] smx_cm   = 32'h0;   // softmax registers (set_smx)
+    logic [31:0] smx_cfg  = 32'h0;
+    logic [31:0] smx_mask = 32'h0;
 
     // a_fills[i] / b_fills[i]: fill value per outer row (length == outer).
     logic [15:0] a_fills[];
@@ -74,6 +77,28 @@ class vop_item;
         exp_c[row] = val;
     endfunction
 
+    // A softmax call: its registers and the value of every output element
+    // (all inputs equal: P = 1 / valid length).
+    function void set_smx(logic [31:0] cm, logic [31:0] cfg, logic [31:0] mask, logic [15:0] p);
+        smx_cm   = cm;
+        smx_cfg  = cfg;
+        smx_mask = mask;
+        foreach (exp_c[i]) exp_c[i] = p;
+    endfunction
+
+    function bit is_smx();
+        return op == OP_SOFTMAX || op == OP_SOFTMAX_T;
+    endfunction
+
+    // output rows (column mode: outer & ~15) and their stride
+    function int unsigned c_rows();
+        return (op == OP_SOFTMAX_T) ? (outer & ~32'd15) : outer;
+    endfunction
+
+    function int unsigned c_inc();
+        return is_smx() ? b_inc : a_inc + b_inc;
+    endfunction
+
     function string to_string();
         return $sformatf(
             "%-16s  op=%0d act=%0d alpha=0x%0h size=%0d outer=%0d a_inc=%0d b_inc=%0d  a[0]=0x%04h b[0]=0x%04h  exp[0]=0x%04h",
@@ -88,7 +113,7 @@ class vop_driver extends axil_agent;
     function new(); super.new("VOP_DRV"); endfunction
 
     task run(vop_item item);
-        int unsigned a_row_bytes, b_bytes, c_bytes, c_inc;
+        int unsigned a_row_bytes, b_bytes, c_bytes, c_inc, a_rows;
         logic [39:0] row_base;
 
         $display("[%0t][VOP_DRV] %s", $time, item.to_string());
@@ -96,13 +121,16 @@ class vop_driver extends axil_agent;
         a_row_bytes = (item.a_inc > 0) ?
             item.a_inc * ELEM_BYTES : item.size * ELEM_BYTES;
         if (a_row_bytes < 16) a_row_bytes = 16;
+        // column-mode softmax: size key rows (every one the first fill)
+        a_rows = (item.op == OP_SOFTMAX_T) ? item.size : item.outer;
         $display("[%0t][VOP_DRV] Loading A (%0d rows × %0d B) ...",
-                 $time, item.outer, a_row_bytes);
-        for (int i = 0; i < int'(item.outer); i++) begin
+                 $time, a_rows, a_row_bytes);
+        for (int i = 0; i < int'(a_rows); i++) begin
             row_base = item.addr_a;
             if (item.a_inc > 0)
                 row_base += 40'(i) * 40'(item.a_inc) * 40'(ELEM_BYTES);
-            fill_const_ddr(row_base, a_row_bytes, item.a_fills[i]);
+            fill_const_ddr(row_base, a_row_bytes,
+                           item.a_fills[(item.op == OP_SOFTMAX_T) ? 0 : i]);
         end
 
         if (item.addr_b != 40'h0) begin
@@ -125,7 +153,7 @@ class vop_driver extends axil_agent;
             end
         end
 
-        c_inc   = item.a_inc + item.b_inc;
+        c_inc   = item.c_inc();
         c_bytes = (c_inc > 0) ?
             item.outer * c_inc * ELEM_BYTES : item.size * ELEM_BYTES;
         if (c_bytes < 16) c_bytes = 16;
@@ -147,6 +175,9 @@ class vop_driver extends axil_agent;
         axil_write(REG_B_INC, 32'(item.b_inc));
         axil_write(REG_ACT,   item.act);        // always: registers persist between tests
         axil_write(REG_ALPHA, item.alpha);
+        axil_write(REG_SMX_CM,   item.smx_cm);
+        axil_write(REG_SMX_CFG,  item.smx_cfg);
+        axil_write(REG_SMX_MASK, item.smx_mask);
         axil_write(REG_GIE,     32'h1);
         axil_write(REG_IER,     32'h1);
         $display("[%0t][VOP_DRV] Asserting ap_start ...", $time);
@@ -220,9 +251,9 @@ class vop_scoreboard extends base_scoreboard;
         logic [39:0] row_base;
         logic [15:0] got;
 
-        c_inc       = item.a_inc + item.b_inc;
+        c_inc       = item.c_inc();
         row_bytes   = (c_inc > 0) ? c_inc * ELEM_BYTES : item.size * ELEM_BYTES;
-        total_elems = item.outer * item.size;
+        total_elems = item.c_rows() * item.size;
         errors      = 0;
 
         read_bytes = item.size * ELEM_BYTES;
@@ -232,7 +263,7 @@ class vop_scoreboard extends base_scoreboard;
         $display("[%0t][VOP_SCB] Verifying C (%0d outer × %0d elem = %0d total)  exp[0]=0x%04h ...",
                  $time, item.outer, item.size, total_elems, item.exp_c[0]);
 
-        for (int row = 0; row < int'(item.outer); row++) begin
+        for (int row = 0; row < int'(item.c_rows()); row++) begin
             row_base = item.addr_c + 40'(row) * 40'(row_bytes);
             `PS.read_mem(row_base, read_bytes, rd_buf);
             for (int e = 0; e < int'(item.size); e++) begin
@@ -284,8 +315,8 @@ class vop_env;
 endclass
 
 // =========================================================================
-// vop_test — 27 test cases covering all ops, fused activations, saturation,
-// and broadcasting.  Alignment contract (VectorOP.h): every run start of a,
+// vop_test — 29 test cases covering all ops, fused activations, saturation,
+// broadcasting and the softmax.  Alignment contract (VectorOP.h): every run start of a,
 // b, c is 16-byte aligned, so a_inc / b_inc are 0 or multiples of 8 elements.
 //
 // Expected value reference  (raw = real × 256):
@@ -430,6 +461,17 @@ class vop_test;
         it = new("div_act_silu", OP_DIV, 8, .a_val(16'h0300), .b_val_(16'h0200),
                  .act_(ACT_SILU));                                      // SiLU(1.5)
         it.set_exp_row(0, 16'h013A);
+        tests.push_back(it);
+
+        // ---- Softmax (equal inputs: P = 1 / n; Cm / Cs of scores at 2^-8,
+        //      P at 2^-8) ---------------------------------------------------
+        it = new("softmax_rows", OP_SOFTMAX, 8, .outer_(2), .a_inc_(8), .b_inc_(8),
+                 .a_val(16'h0180));
+        it.set_smx(32'd12102203, 32'h0813, 32'd8, 16'h0020);           // 1/8
+        tests.push_back(it);
+        it = new("softmax_cols", OP_SOFTMAX_T, 16, .outer_(16), .a_inc_(16), .b_inc_(16),
+                 .a_val(16'hFE40));
+        it.set_smx(32'd12102203, 32'h0813, 32'd16, 16'h0010);          // 16 keys: 1/16
         tests.push_back(it);
 
         // ---- Run all tests ----------------------------------------------

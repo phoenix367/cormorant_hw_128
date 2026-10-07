@@ -83,19 +83,19 @@ Or from the Vivado Tcl console:
 source scripts/sim.tcl
 ```
 
-The run takes ~3 minutes (73 constant-fill cases over the four kernels
+The run takes ~3 minutes (75 constant-fill cases over the four kernels
 through the PS VIP's DDR model) and ends with:
 
 ```
 ##########################################################
 ##  CORMORANT TESTBENCH — OVERALL RESULTS
 ##########################################################
-##        VectorOPKernel   27 /  27  (0 failed)
+##        VectorOPKernel   29 /  29  (0 failed)
 ##            ConvKernel   17 /  17  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
 ##########################################################
-##  TOTAL: 73 / 73 passed
+##  TOTAL: 75 / 75 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
@@ -150,7 +150,9 @@ HPC0 slice's ready.  `scripts/bd_kernel_clock.tcl` makes all of it from the
 default strategy the same netlist missed 4 ns by tens of ps.  Routed:
 WNS +0.105 ns, WHS +0.010 ns (bitstream `986cef4866a0`); with VectorOPKernel's
 activation unit (the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) WNS
-+0.061 ns, WHS +0.010 ns (bitstream `6436623029f7`, production).
++0.061 ns, WHS +0.010 ns (bitstream `6436623029f7`); with its softmax unit
+(`doc/plans/SOFTMAX_PLAN.md`) WNS +0.041 ns, WHS +0.010 ns (bitstream
+`588d721997cb`, production).
 
 Instance widths follow the IPs: after the IP upgrade, `build.tcl` and
 `sim.tcl` put every kernel instance's `C_M_AXI_*_DATA_WIDTH` back to the
