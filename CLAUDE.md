@@ -15,7 +15,7 @@ exports) connected to the Zynq MPSoC PS via a 128-bit AXI bus.
 | `cormorant_hw_128.srcs/sources_1/bd/design_cormorant/ip/*/` | IP core configurations (`.xci`) |
 | `cormorant_hw_128.srcs/sim_1/new/` | Simulation testbench (SystemVerilog) |
 | `cormorant_tb_behav.wcfg` | Waveform configuration for Vivado simulator |
-| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`, `bd_kernel_clock.tcl`) |
+| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`); the block-design edits (`bd_kernel_clock.tcl`, `bd_vop_b_hpc1.tcl`; `bd_hp0_outputs.tcl`, an experiment not in the design) |
 | `cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` | Timing constraints of the 250 MHz kernel clock |
 
 Generated directories (`*.runs/`, `*.gen/`, `*.ip_user_files/`, `*.sim/`,
@@ -28,14 +28,15 @@ The block design instantiates:
 
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
-| `VectorOPKernel_0` | VectorOPKernel | `0xA000_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
+| `VectorOPKernel_0` | VectorOPKernel | `0xA000_0000` | 128-bit AXI4: a/c on `S_AXI_HPC0_FPD`, b on `S_AXI_HPC1_FPD` |
 | `MatmulKernel_0` | MatmulKernel | `0xA001_0000` | 128-bit AXI4: A/C on `S_AXI_HPC0_FPD`, B on `S_AXI_HPC1_FPD` |
 | `ConvKernel_0` | ConvKernel | `0xA002_0000` | 128-bit AXI4: x/y on `S_AXI_HPC0_FPD`, w/b on `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | PoolingKernel | `0xA003_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
 | `zynq_ultra_ps_e_0` | Zynq MPSoC PS | — | AXI master + DDR controller |
 
 The kernel data masters are aggregated through `axi_interconnect_0` (into
-`S_AXI_HPC0_FPD`) and `axi_mem_intercon` (into `S_AXI_HPC1_FPD`) on the PS.
+`S_AXI_HPC0_FPD`, eight masters) and `axi_mem_intercon` (into the read-only
+`S_AXI_HPC1_FPD`, four) on the PS.
 AXI-Lite control ports go from `M_AXI_HPM0_FPD` through the `axi_smc`
 SmartConnect. Each kernel drives an interrupt line back to the PS.
 
@@ -61,14 +62,28 @@ WNS +0.105 ns, WHS +0.010 ns (bitstream `986cef4866a0`); with VectorOPKernel's
 activation unit (the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) WNS
 +0.061 ns, WHS +0.010 ns (bitstream `6436623029f7`); with its softmax unit
 (`doc/plans/SOFTMAX_PLAN.md`) WNS +0.041 ns, WHS +0.010 ns (bitstream
-`588d721997cb`, production).
+`588d721997cb`); with VectorOPKernel's b read port on HPC1
+(`doc/plans/PS_PORTS_PLAN.md` §5) WNS +0.114 ns, WHS +0.010 ns (bitstream
+`8599aa7a5f12`, production).
 
 Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
 `S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
-B); `axi_interconnect_0` → HPC0 keeps the other nine data masters.  It was
-neutral at 100 MHz (all layers compute-bound) and is kept for the 250 MHz
-clock.  When moving a master between ports in Tcl, delete its stale
-`SEG_*` address segments first or `assign_bd_address` collides.
+B).  It was neutral at 100 MHz (all layers compute-bound) and is kept for
+the 250 MHz clock.  Since 2026-10-08 (the parent repo's
+`doc/plans/PS_PORTS_PLAN.md` §5, `scripts/bd_vop_b_hpc1.tcl`) it also
+carries VectorOPKernel's b read port (`axi_mem_intercon` S03), so a binary
+op reads its two operands through two ports: 24–38 % faster than with both
+on HPC0.  `axi_interconnect_0` → HPC0 keeps the other eight data masters
+(PoolingKernel gmem1 took the freed S01).  `scripts/bd_hp0_outputs.tcl` (the
+kernels' outputs on `S_AXI_HP0_FPD`) was tried first and dropped: bit-exact,
+but performance-neutral (PS_PORTS_PLAN §1–§4).  When moving a master between ports in Tcl, delete its stale
+`SEG_*` address segments first or `assign_bd_address` collides.  A BD script
+run on a freshly checked-out `.xpr` needs the parent build's IP repository
+(`-ip-repo …/build_hw128/ip_repo_kv260`, and `upgrade_ip` of the locked IPs):
+the project's stored repository path is a stale default, the four kernel IPs
+are then locked and `validate_bd_design` refuses.  A `.gen/sources_1/bd/design_cormorant`
+generated from another version of the design locks blocks too ("stale
+content") — delete it; `sim.tcl` / `build.tcl` regenerate it.
 
 Until 2026-09-24 every kernel instance and `S_AXI_HPC0_FPD` were in fact
 32-bit (`C_M_AXI_*_DATA_WIDTH = 32`, `PSU__SAXIGP0__DATA_WIDTH = 32`,
