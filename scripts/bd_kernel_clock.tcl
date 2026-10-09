@@ -76,7 +76,13 @@ proc apply_interconnect_regslices {} {
     # axi_mem_intercon's master side is read-only (S_AXI_HPC1_FPD): a slice
     # there disagrees with the crossbar's READ_WRITE_MODE; its SIs have the
     # axi_mmu AR slices on the kernel side anyway, so only the SIs get one
-    foreach {ic mi} {axi_interconnect_0 1 axi_mem_intercon 0} {
+    # With the outputs on HP0 (bd_hp0_outputs.tcl: axi_out_intercon) HPC0 is
+    # read-only too, so axi_interconnect_0's MI slice goes as well.
+    set ics {axi_interconnect_0 1 axi_mem_intercon 0}
+    if {[get_bd_cells -quiet axi_out_intercon] ne ""} {
+        set ics {axi_interconnect_0 0 axi_mem_intercon 0 axi_out_intercon 0}
+    }
+    foreach {ic mi} $ics {
         set cell [get_bd_cells $ic]
         set nsi [get_property CONFIG.NUM_SI $cell]
         set props [list CONFIG.M00_HAS_REGSLICE $mi]

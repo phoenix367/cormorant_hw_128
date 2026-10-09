@@ -1,26 +1,39 @@
 # bd_hp0_outputs.tcl — the kernels' outputs on S_AXI_HP0_FPD.  Idempotent;
 # run on the project with the BD open or pass the .xpr:
 #
-#   vivado -mode batch -source scripts/bd_hp0_outputs.tcl -tclargs <xpr>
+#   vivado -mode batch -source scripts/bd_hp0_outputs.tcl -tclargs <xpr> [-ip-repo DIR] [-port HP0|HP1|HP2|HP3]
 #
-# The parent repo's doc/plans/PS_PORTS_PLAN.md §1–§4 — an experiment, dropped:
-# bit-exact on the board but performance-neutral (bitstream 4a820240ba9c).  Every kernel port is read-only or
-# write-only; the four write masters (the outputs: VectorOPKernel gmem2 c,
-# MatmulKernel gmem2 C, ConvKernel gmem3 y, PoolingKernel gmem1 y) go through
-# axi_out_intercon to S_AXI_HP0_FPD (SAXIGP2, 128-bit; FPD switch → DDRC port
-# 3, past the CCI), and axi_interconnect_0 keeps the five readers on HPC0
-# (axi_mem_intercon → HPC1 is unchanged).  Clocks and resets as the other
-# two interconnects (clk_wiz_0/clk_out1, rst_ps8_0_99M/peripheral_aresetn),
-# register slices on every SI, none on the MIs (all three ports are one-way
-# now).  The moved masters' HPC0 address segments are deleted before
+# -ip-repo: the kernels' IP repository (the parent build's
+# build_hw128/ip_repo_kv260, as sim.tcl / build.tcl take it); locked kernel
+# IPs are upgraded first — the BD cannot be validated with one locked.
+# -port: the PS high-performance port the outputs go to (default HP0;
+# PS_PORTS_PLAN §7 moves them to HP2 — FPD switch → DDRC port 4, HP0's is
+# port 3 shared with DisplayPort).  Switching ports on a design that already
+# has axi_out_intercon re-targets its M00, enables the new port (128-bit),
+# clocks it, disables the old one and swaps the writers' address segments.
+#
+# The parent repo's doc/plans/PS_PORTS_PLAN.md §1–§4 (experiment 1 on the
+# 588d721997cb design: bit-exact, performance-neutral, bitstream 4a820240ba9c)
+# and §6 (the same move on top of experiment 2's design, VectorOP b on HPC1).
+# Every kernel port is read-only or write-only; the four write masters (the
+# outputs: VectorOPKernel gmem2 c, MatmulKernel gmem2 C, ConvKernel gmem3 y,
+# PoolingKernel gmem1 y) go through axi_out_intercon to S_AXI_HP0_FPD
+# (SAXIGP2, 128-bit; FPD switch → DDRC port 3, past the CCI), and
+# axi_interconnect_0 keeps the four readers on HPC0 (VectorOP a, Matmul A,
+# Conv x, Pool x; axi_mem_intercon → HPC1 with Conv w / b, Matmul B and
+# VectorOP b is unchanged).  Clocks and resets as the other two interconnects
+# (clk_wiz_0/clk_out1, rst_ps8_0_99M/peripheral_aresetn), register slices on
+# every SI, none on the MIs (all three ports are one-way now; the
+# kernel_clock.xdc MAX_FANOUT on axi_interconnect_0's MI slice goes with it).
+# The moved masters' HPC0 address segments are deleted before
 # assign_bd_address (they would collide with the HP0 ones).  LPS_OCM: every
 # port maps it at 0xFF00_0000, and a master that once had HPC0's keeps it
 # (BD 41-1359 for the HP0 / HPC1 one) — the kernels address DDR only.
 
 set hp0_writers {VectorOPKernel_0/m_axi_gmem2 MatmulKernel_0/m_axi_gmem2 \
                  ConvKernel_0/m_axi_gmem3 PoolingKernel_0/m_axi_gmem1}
-set hpc0_readers {VectorOPKernel_0/m_axi_gmem0 VectorOPKernel_0/m_axi_gmem1 \
-                  MatmulKernel_0/m_axi_gmem0 ConvKernel_0/m_axi_gmem0 PoolingKernel_0/m_axi_gmem0}
+set hpc0_readers {VectorOPKernel_0/m_axi_gmem0 MatmulKernel_0/m_axi_gmem0 \
+                  ConvKernel_0/m_axi_gmem0 PoolingKernel_0/m_axi_gmem0}
 
 # connect PIN to the net that SRC drives (unless it is connected already)
 proc hp0_attach {src pin} {
@@ -55,11 +68,16 @@ proc hp0_connect {maxi slave} {
     return 1
 }
 
-proc apply_hp0_outputs {} {
+# HPn is the PS's S_AXI_GP(n+2) (SAXIGP2..5)
+proc hp0_gp {port} { return [expr {[string index $port 2] + 2}] }
+
+proc apply_hp0_outputs {{port HP0}} {
     global hp0_writers hpc0_readers
-    set ps [get_bd_cells zynq_ultra_ps_e_0]
-    set_property -dict [list CONFIG.PSU__USE__S_AXI_GP2 {1} CONFIG.PSU__SAXIGP2__DATA_WIDTH {128}] $ps
-    hp0_attach clk_wiz_0/clk_out1 zynq_ultra_ps_e_0/saxihp0_fpd_aclk
+    set ps  [get_bd_cells zynq_ultra_ps_e_0]
+    set gp  [hp0_gp $port]
+    set lp  [string tolower $port]
+    set_property -dict [list CONFIG.PSU__USE__S_AXI_GP$gp {1} CONFIG.PSU__SAXIGP${gp}__DATA_WIDTH {128}] $ps
+    hp0_attach clk_wiz_0/clk_out1 zynq_ultra_ps_e_0/saxi${lp}_fpd_aclk
 
     set out [get_bd_cells -quiet axi_out_intercon]
     if {$out eq ""} {
@@ -68,15 +86,27 @@ proc apply_hp0_outputs {} {
     }
     set nw [llength $hp0_writers]
     set_property -dict [list CONFIG.NUM_SI $nw CONFIG.NUM_MI 1 CONFIG.XBAR_DATA_WIDTH 128] $out
-    hp0_connect axi_out_intercon/M00_AXI zynq_ultra_ps_e_0/S_AXI_HP0_FPD
+    # the port the outputs used before (another HPn): disconnect and disable it
+    set old [get_bd_intf_nets -quiet -of_objects [get_bd_intf_pins axi_out_intercon/M00_AXI]]
+    foreach p [get_bd_intf_pins -quiet -of_objects $old] {
+        if {[regexp {zynq_ultra_ps_e_0/S_AXI_(HP[0-3])_FPD$} $p -> oldport] && $oldport ne $port} {
+            delete_bd_objs $old
+            set oclk [get_bd_pins zynq_ultra_ps_e_0/saxi[string tolower $oldport]_fpd_aclk]
+            set onet [get_bd_nets -quiet -of_objects $oclk]
+            if {$onet ne ""} { disconnect_bd_net $onet $oclk }
+            set_property CONFIG.PSU__USE__S_AXI_GP[hp0_gp $oldport] {0} $ps
+            puts "=== $oldport released ==="
+        }
+    }
+    hp0_connect axi_out_intercon/M00_AXI zynq_ultra_ps_e_0/S_AXI_${port}_FPD
     hp0_ic_clocks axi_out_intercon $nw
 
-    # the writers' address segments go (assign_bd_address gives them HP0's)
+    # the writers' other address segments go (assign_bd_address gives them $port's)
     set moved 0
     foreach w $hp0_writers {
         set sp [get_bd_addr_spaces -quiet [string map {/m_axi_ /Data_m_axi_} $w]]
         set segs [get_bd_addr_segs -quiet -of_objects $sp]
-        set stale [lsearch -all -inline -not -glob $segs *HP0_*]
+        set stale [lsearch -all -inline -not -glob $segs *${port}_*]
         if {[llength $stale]} { delete_bd_objs $stale }
     }
 
@@ -130,9 +160,20 @@ proc hp0_report {} {
 
 if {[info exists argv] && [llength $argv] >= 1 && [string match *.xpr [lindex $argv 0]]} {
     open_project [lindex $argv 0]
+    set ri [lsearch -exact $argv -ip-repo]
+    if {$ri >= 0} {
+        set_property ip_repo_paths [list [file normalize [lindex $argv [expr {$ri + 1}]]]] [current_project]
+        update_ip_catalog -rebuild
+    }
+    set locked [get_ips -quiet -filter {IS_LOCKED == 1}]
+    if {[llength $locked]} { upgrade_ip $locked }
+    set port HP0
+    set pi [lsearch -exact $argv -port]
+    if {$pi >= 0} { set port [string toupper [lindex $argv [expr {$pi + 1}]]] }
+    if {![regexp {^HP[0-3]$} $port]} { error "-port takes HP0..HP3, not '$port'" }
     set bd [get_files -of_objects [get_filesets sources_1] -filter {FILE_TYPE == "Block Designs"}]
     open_bd_design [lindex $bd 0]
-    apply_hp0_outputs
+    apply_hp0_outputs $port
     validate_bd_design
     hp0_report
     save_bd_design
