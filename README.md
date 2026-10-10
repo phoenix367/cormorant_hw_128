@@ -115,16 +115,19 @@ mirrors the kernel's fixed-point `poly_sqrt` bit for bit.
 |----------|----|--------------|----------|
 | `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6, fused Relu / Relu6 `act`) — the parent repo's SystemVerilog kernel (`kernels/vectorop_rtl`, `make package_vectorop_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA000_0000` | gmem0–2 → `S_AXI_HPC0_FPD` |
 | `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming — the parent repo's SystemVerilog kernel (`kernels/matmul_rtl`, `make package_matmul_rtl`; same VLNV as the retired HLS one) | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
-| `ConvKernel_0` | 2-D convolution (NCHW), MatMuls as convs — the parent repo's SystemVerilog kernel (`kernels/conv_rtl`, `make package_conv_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA002_0000` | gmem0, gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
+| `ConvKernel_0` | 2-D convolution (NCHW), MatMuls as convs — the parent repo's SystemVerilog kernel (`kernels/conv_rtl`, `make package_conv_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA002_0000` | gmem0 → `S_AXI_HP2_FPD`; gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | Max/Avg/Lp/Global pooling — the parent repo's SystemVerilog kernel (`kernels/pool_rtl`, `make package_pool_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA003_0000` | gmem0–1 → `S_AXI_HPC0_FPD` |
 
-All data ports are 128-bit AXI4.  Eight of them aggregate through
-`axi_interconnect_0` into `S_AXI_HPC0_FPD`, the other four (ConvKernel
-gmem1 / gmem2, MatmulKernel gmem1, VectorOPKernel gmem1 — its b operand,
-since 2026-10-08: `scripts/bd_vop_b_hpc1.tcl`, the parent repo's
-`doc/plans/PS_PORTS_PLAN.md` §5) through `axi_mem_intercon` into
-`S_AXI_HPC1_FPD`; both PS-side widths (`PSU__SAXIGP0__DATA_WIDTH`,
-`PSU__SAXIGP1__DATA_WIDTH`) are 128 bits.  (`S_AXI_HPC0_FPD` had been left
+All data ports are 128-bit AXI4.  Seven of them aggregate through
+`axi_interconnect_0` into `S_AXI_HPC0_FPD`; four (ConvKernel gmem1 / gmem2,
+MatmulKernel gmem1, VectorOPKernel gmem1 — its b operand, since 2026-10-08:
+`scripts/bd_vop_b_hpc1.tcl`, the parent repo's `doc/plans/PS_PORTS_PLAN.md`
+§5) through `axi_mem_intercon` into `S_AXI_HPC1_FPD`; ConvKernel's gmem0 (x)
+alone through `axi_x_intercon` into `S_AXI_HP2_FPD` (since 2026-10-10:
+`scripts/bd_conv_x_hp.tcl`, `doc/plans/DEPTHWISE_PLAN.md` §8.5 — its
+144-byte row runs bypass the CCI, which returned them at ~0.4 beats per
+cycle); the three PS-side widths (`PSU__SAXIGP0/1/4__DATA_WIDTH`) are 128
+bits.  (`S_AXI_HPC0_FPD` had been left
 at 32 until 2026-09-24, which capped all PL↔DDR traffic at 32 bits ×
 100 MHz (400 MB/s) and cost 4 cycles per 128-bit kernel word;
 `upload_bitstream.py` also writes the AFIFM width registers after the
@@ -133,8 +136,8 @@ the `axi_smc` SmartConnect.
 Each kernel drives an interrupt line back to the PS.
 
 **Clock (since 2026-10-06, the parent repo's `doc/plans/FMAX_250_PLAN.md`).**
-Everything in the PL — the four kernels, both interconnects, the SmartConnect,
-the PS-PL AXI port clocks (`maxihpm0_fpd_aclk`, `saxihpc0/1_fpd_aclk`) and the
+Everything in the PL — the four kernels, the three interconnects, the SmartConnect,
+the PS-PL AXI port clocks (`maxihpm0_fpd_aclk`, `saxihpc0/1_fpd_aclk`, `saxihp2_fpd_aclk`) and the
 reset block — runs on `clk_wiz_0/clk_out1`, **250 MHz** (249.9975: an MMCM
 fed by `pl_clk0`, which stays at the boot firmware's 100 MHz).  The bitstream
 thus defines its own kernel clock; PL0 only feeds the MMCM, and the parent
@@ -156,7 +159,9 @@ activation unit (the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) WNS
 (`doc/plans/SOFTMAX_PLAN.md`) WNS +0.041 ns, WHS +0.010 ns (bitstream
 `588d721997cb`); with VectorOPKernel's b read port on HPC1
 (`doc/plans/PS_PORTS_PLAN.md` §5) WNS +0.114 ns, WHS +0.010 ns (bitstream
-`8599aa7a5f12`, production).
+`8599aa7a5f12`); with ConvKernel's x port on HP2 and its overlapped
+line-buffer loads (`doc/plans/DEPTHWISE_PLAN.md` §8) WNS +0.098 ns, WHS
++0.010 ns (bitstream `f70ce632a97a`, production).
 
 Instance widths follow the IPs: after the IP upgrade, `build.tcl` and
 `sim.tcl` put every kernel instance's `C_M_AXI_*_DATA_WIDTH` back to the

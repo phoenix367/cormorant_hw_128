@@ -203,12 +203,12 @@
                 "MA": "Data_m_axi_gmem0",
                 "MX": "/ConvKernel_0",
                 "MI": "m_axi_gmem0",
-                "MS": "SEG_zynq_ultra_ps_e_0_HPC0_DDR_LOW",
+                "MS": "SEG_zynq_ultra_ps_e_0_HP2_DDR_LOW",
                 "MV": "xilinx.com:hls:ConvKernel:1.0",
                 "SX": "/zynq_ultra_ps_e_0",
-                "SI": "S_AXI_HPC0_FPD",
-                "MM": "SAXIGP0",
-                "SS": "HPC0_DDR_LOW",
+                "SI": "S_AXI_HP2_FPD",
+                "MM": "SAXIGP4",
+                "SS": "HP2_DDR_LOW",
                 "SV": "xilinx.com:ip:zynq_ultra_ps_e:3.5",
                 "TM": "both",
                 "TU": "memory"
@@ -503,12 +503,12 @@
                 "MA": "Data_m_axi_gmem0",
                 "MX": "/ConvKernel_0",
                 "MI": "m_axi_gmem0",
-                "MS": "SEG_zynq_ultra_ps_e_0_HPC0_QSPI",
+                "MS": "SEG_zynq_ultra_ps_e_0_HP2_QSPI",
                 "MV": "xilinx.com:hls:ConvKernel:1.0",
                 "SX": "/zynq_ultra_ps_e_0",
-                "SI": "S_AXI_HPC0_FPD",
-                "MM": "SAXIGP0",
-                "SS": "HPC0_QSPI",
+                "SI": "S_AXI_HP2_FPD",
+                "MM": "SAXIGP4",
+                "SS": "HP2_QSPI",
                 "SV": "xilinx.com:ip:zynq_ultra_ps_e:3.5",
                 "TM": "both",
                 "TU": "memory"
@@ -731,12 +731,12 @@
                 "MA": "Data_m_axi_gmem0",
                 "MX": "/ConvKernel_0",
                 "MI": "m_axi_gmem0",
-                "MS": "SEG_zynq_ultra_ps_e_0_HPC0_DDR_HIGH",
+                "MS": "SEG_zynq_ultra_ps_e_0_HP2_DDR_HIGH",
                 "MV": "xilinx.com:hls:ConvKernel:1.0",
                 "SX": "/zynq_ultra_ps_e_0",
-                "SI": "S_AXI_HPC0_FPD",
-                "MM": "SAXIGP0",
-                "SS": "HPC0_DDR_HIGH",
+                "SI": "S_AXI_HP2_FPD",
+                "MM": "SAXIGP4",
+                "SS": "HP2_DDR_HIGH",
                 "SV": "xilinx.com:ip:zynq_ultra_ps_e:3.5",
                 "TM": "both",
                 "TU": "memory"
@@ -956,25 +956,6 @@
                 "HA": "0x00000000FFFFFFFF",
                 "BP": "C_BASEADDR",
                 "HP": "C_HIGHADDR",
-                "MA": "Data_m_axi_gmem0",
-                "MX": "/ConvKernel_0",
-                "MI": "m_axi_gmem0",
-                "MS": "SEG_zynq_ultra_ps_e_0_HPC0_LPS_OCM",
-                "MV": "xilinx.com:hls:ConvKernel:1.0",
-                "SX": "/zynq_ultra_ps_e_0",
-                "SI": "S_AXI_HPC0_FPD",
-                "MM": "SAXIGP0",
-                "SS": "HPC0_LPS_OCM",
-                "SV": "xilinx.com:ip:zynq_ultra_ps_e:3.5",
-                "TM": "both",
-                "TU": "register"
-            },
-            "V44": {
-                "VT": "ACE",
-                "BA": "0x00000000FF000000",
-                "HA": "0x00000000FFFFFFFF",
-                "BP": "C_BASEADDR",
-                "HP": "C_HIGHADDR",
                 "MA": "Data_m_axi_gmem3",
                 "MX": "/ConvKernel_0",
                 "MI": "m_axi_gmem3",
@@ -988,7 +969,7 @@
                 "TM": "both",
                 "TU": "register"
             },
-            "V45": {
+            "V44": {
                 "VT": "ACE",
                 "BA": "0x00000000FF000000",
                 "HA": "0x00000000FFFFFFFF",
@@ -1007,7 +988,7 @@
                 "TM": "both",
                 "TU": "register"
             },
-            "V46": {
+            "V45": {
                 "VT": "ACE",
                 "BA": "0x00000000FF000000",
                 "HA": "0x00000000FFFFFFFF",
@@ -1026,7 +1007,7 @@
                 "TM": "both",
                 "TU": "register"
             },
-            "V47": {
+            "V46": {
                 "VT": "ACE",
                 "BA": "0x00000000FF000000",
                 "HA": "0x00000000FFFFFFFF",
@@ -1045,7 +1026,7 @@
                 "TM": "both",
                 "TU": "register"
             },
-            "V48": {
+            "V47": {
                 "VT": "ACE",
                 "BA": "0x00000000FF000000",
                 "HA": "0x00000000FFFFFFFF",
@@ -1064,7 +1045,7 @@
                 "TM": "both",
                 "TU": "register"
             },
-            "V49": {
+            "V48": {
                 "VT": "ACE",
                 "BA": "0x00000000FF000000",
                 "HA": "0x00000000FFFFFFFF",
@@ -1083,7 +1064,7 @@
                 "TM": "both",
                 "TU": "register"
             },
-            "V50": {
+            "V49": {
                 "VT": "ACE",
                 "BA": "0x00000000FF000000",
                 "HA": "0x00000000FFFFFFFF",
@@ -1344,11 +1325,6 @@
             },
             {
                 "src": "V49",
-                "trg": "V2",
-                "EH": "2"
-            },
-            {
-                "src": "V50",
                 "trg": "V2",
                 "EH": "2"
             }

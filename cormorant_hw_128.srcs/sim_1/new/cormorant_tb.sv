@@ -69,6 +69,7 @@ module cormorant_tb;
         `PS.M_AXI_HPM0_FPD.master.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HPC0_FPD.slave.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HPC1_FPD.slave.IF.set_xilinx_reset_check_to_warn();
+        `PS.S_AXI_HP2_FPD.slave.IF.set_xilinx_reset_check_to_warn();
 
         // POR + system reset, then PL fabric reset.
         `PS.por_srstb_reset(1'b0);   // assert  → DDR model enters reset
@@ -94,6 +95,7 @@ module cormorant_tb;
 
         // BEST_CASE (fixed 21-cycle) write-response latency on HPC0_FPD.
         `PS.set_slave_profile("S_AXI_HPC0_FPD", 0);
+        `PS.set_slave_profile("S_AXI_HP2_FPD", 0);
 
         // HLS-generated 128-bit AXI masters leave WSTRB registers uninitialised
         // (X) in simulation before the first write beat is issued.  This is a
