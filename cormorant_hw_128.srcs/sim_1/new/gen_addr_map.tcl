@@ -17,6 +17,7 @@ set proj_root [file normalize [file join $script_dir ../../..]]
 set hwh_path  ""
 
 foreach candidate [list \
+    [file join $proj_root cormorant_hw_128.gen sources_1 bd design_cormorant hw_handoff design_cormorant.hwh] \
     [file join $proj_root cormorant_hw.gen sources_1 bd design_cormorant hw_handoff design_cormorant.hwh]] {
     if {[file exists $candidate]} {
         set hwh_path $candidate

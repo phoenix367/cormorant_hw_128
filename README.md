@@ -1,9 +1,10 @@
 # Cormorant HW
 
 Vivado 2025.2 block design for the **Xilinx KV260 Starter Kit**
-(xck26-sfvc784-2LV-c). Instantiates four neural-network accelerator IP
-cores (the ConvKernel, the MatmulKernel, the VectorOPKernel and the
-PoolingKernel, all in SystemVerilog) connected to the Zynq MPSoC PS via AXI.
+(xck26-sfvc784-2LV-c). Instantiates five neural-network accelerator IP
+cores (the ConvKernel, the MatmulKernel, the VectorOPKernel, the
+PoolingKernel and the RowOpsKernel — the row-ops unit — all in SystemVerilog)
+connected to the Zynq MPSoC PS via AXI.
 
 This is the hardware sub-project of [Cormorant](https://github.com/GradeBuilderSL/cormorant)
 — an FPGA neural-network inference accelerator.
@@ -11,8 +12,8 @@ This is the hardware sub-project of [Cormorant](https://github.com/GradeBuilderS
 ## Prerequisites
 
 - **Vivado 2025.2** (with Zynq MPSoC device support)
-- KV260 IP catalog entries for the four accelerator kernels (VectorOPKernel,
-  MatmulKernel, ConvKernel, PoolingKernel) built from the parent repo
+- KV260 IP catalog entries for the five accelerator kernels (VectorOPKernel,
+  MatmulKernel, ConvKernel, PoolingKernel, RowOpsKernel) built from the parent repo
 
 ## Quick Start
 
@@ -83,8 +84,9 @@ Or from the Vivado Tcl console:
 source scripts/sim.tcl
 ```
 
-The run takes ~3 minutes (75 constant-fill cases over the four kernels
-through the PS VIP's DDR model) and ends with:
+The run takes ~4 minutes (103 cases: the four kernels' constant-fill cases and the RowOpsKernel's 28 —
+its table load and its 21 checked-in fixtures — through the PS VIP's DDR
+model) and ends with:
 
 ```
 ##########################################################
@@ -94,8 +96,9 @@ through the PS VIP's DDR model) and ends with:
 ##            ConvKernel   17 /  17  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
+##          RowOpsKernel   28 /  28  (0 failed)
 ##########################################################
-##  TOTAL: 75 / 75 passed
+##  TOTAL: 103 / 103 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
@@ -117,6 +120,7 @@ mirrors the kernel's fixed-point `poly_sqrt` bit for bit.
 | `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming — the parent repo's SystemVerilog kernel (`kernels/matmul_rtl`, `make package_matmul_rtl`; same VLNV as the retired HLS one) | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
 | `ConvKernel_0` | 2-D convolution (NCHW), MatMuls as convs — the parent repo's SystemVerilog kernel (`kernels/conv_rtl`, `make package_conv_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA002_0000` | gmem0 → `S_AXI_HP2_FPD`; gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | Max/Avg/Lp/Global pooling — the parent repo's SystemVerilog kernel (`kernels/pool_rtl`, `make package_pool_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA003_0000` | gmem0–1 → `S_AXI_HPC0_FPD` |
+| `RowOpsKernel_0` | The row-ops unit: the transformer graphs' row ops (norms, residual adds, SiLU·up, RoPE, dequant, copies, block transposes) in fixed point — the parent repo's SystemVerilog kernel (`kernels/rowops_rtl`, `make package_rowops_rtl`; `doc/plans/HOSTOPS_PLAN.md`) | `0xA004_0000` | gmem0 (read + write) → `S_AXI_HP0_FPD` |
 
 All data ports are 128-bit AXI4.  Seven of them aggregate through
 `axi_interconnect_0` into `S_AXI_HPC0_FPD`; four (ConvKernel gmem1 / gmem2,
@@ -126,8 +130,10 @@ MatmulKernel gmem1, VectorOPKernel gmem1 — its b operand, since 2026-10-08:
 alone through `axi_x_intercon` into `S_AXI_HP2_FPD` (since 2026-10-10:
 `scripts/bd_conv_x_hp.tcl`, `doc/plans/DEPTHWISE_PLAN.md` §8.5 — its
 144-byte row runs bypass the CCI, which returned them at ~0.4 beats per
-cycle); the three PS-side widths (`PSU__SAXIGP0/1/4__DATA_WIDTH`) are 128
-bits.  (`S_AXI_HPC0_FPD` had been left
+cycle); the RowOpsKernel's one read + write port through
+`axi_rowops_intercon` into `S_AXI_HP0_FPD` (since 2026-10-12:
+`scripts/bd_rowops_hp0.tcl`, `doc/plans/HOSTOPS_PLAN.md` phase 3); the four
+PS-side widths (`PSU__SAXIGP0/1/2/4__DATA_WIDTH`) are 128 bits.  (`S_AXI_HPC0_FPD` had been left
 at 32 until 2026-09-24, which capped all PL↔DDR traffic at 32 bits ×
 100 MHz (400 MB/s) and cost 4 cycles per 128-bit kernel word;
 `upload_bitstream.py` also writes the AFIFM width registers after the
@@ -161,7 +167,10 @@ activation unit (the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) WNS
 (`doc/plans/PS_PORTS_PLAN.md` §5) WNS +0.114 ns, WHS +0.010 ns (bitstream
 `8599aa7a5f12`); with ConvKernel's x port on HP2 and its overlapped
 line-buffer loads (`doc/plans/DEPTHWISE_PLAN.md` §8) WNS +0.098 ns, WHS
-+0.010 ns (bitstream `f70ce632a97a`, production).
++0.010 ns (bitstream `f70ce632a97a`); with the RowOpsKernel and its
+interconnect on HP0 (`doc/plans/HOSTOPS_PLAN.md` phase 3) WNS +0.020 ns,
+WHS +0.010 ns (bitstream `1cedaf2ed816`, production: 93 969 LUT, 136 / 144
+BRAM tiles, 55 / 64 URAM, 833 DSP).
 
 Instance widths follow the IPs: after the IP upgrade, `build.tcl` and
 `sim.tcl` put every kernel instance's `C_M_AXI_*_DATA_WIDTH` back to the
@@ -192,7 +201,7 @@ cormorant_hw_128.srcs/
     cormorant_tb.sv                          Testbench top module
     cormorant_addr_map.svh                   AXI-Lite base addresses
     {vop,conv,mm,pk}_regmap.svh              Per-kernel register maps
-    {vop,conv,mm,pk}_classes.svh             Per-kernel test class hierarchies
+    {vop,conv,mm,pk,ro}_classes.svh          Per-kernel test class hierarchies
     axil_agent.svh                           AXI-Lite read/write base class
     base_scoreboard.svh                      Pass/fail counter base class
     tb_functions.svh                         Fixed-point arithmetic helpers

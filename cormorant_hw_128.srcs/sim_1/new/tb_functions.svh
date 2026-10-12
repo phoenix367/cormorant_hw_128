@@ -133,6 +133,23 @@ function automatic logic [15:0] compute_mm_const(
 endfunction
 
 // -----------------------------------------------------------------------
+// Shadow of every byte the testbench or a kernel wrote (byte address ->
+// value).  The PS VIP's DDRC write path races (tb_infra.svh ddrc_wr_fix) and
+// deposits stale or zero bytes where a beat's strobes are low — seen on the
+// HP0 port at burst ends (32 bytes after a 48-byte RowOps COPY row); the fix
+// restores such bytes from here, as the test stand's conv_tb does.  Every
+// backdoor write goes through shadow_write_mem.
+// -----------------------------------------------------------------------
+logic [7:0] shadow_mem [longint unsigned];
+
+task automatic shadow_write_mem(input logic [CHUNK_BITS-1:0] buf_mem, input [39:0] base,
+                                input int unsigned nbytes);
+    for (int unsigned b = 0; b < nbytes; b++)
+        shadow_mem[longint'(base) + b] = buf_mem[b*8 +: 8];
+    `PS.write_mem(buf_mem, base, nbytes);
+endtask
+
+// -----------------------------------------------------------------------
 // DDR constant fill — write nbytes of a repeated 16-bit val starting at base.
 // Requires CHUNK_BYTES, CHUNK_BITS localparams and the `PS macro.
 // -----------------------------------------------------------------------
@@ -146,9 +163,9 @@ task automatic fill_const_ddr(input [39:0]      base,
     n_chunks = nbytes / CHUNK_BYTES;
     rem      = nbytes % CHUNK_BYTES;
     for (i = 0; i < n_chunks; i++)
-        `PS.write_mem(buf_mem, base + 40'(i * CHUNK_BYTES), CHUNK_BYTES);
+        shadow_write_mem(buf_mem, base + 40'(i * CHUNK_BYTES), CHUNK_BYTES);
     if (rem > 0)
-        `PS.write_mem(buf_mem, base + 40'(n_chunks * CHUNK_BYTES), rem);
+        shadow_write_mem(buf_mem, base + 40'(n_chunks * CHUNK_BYTES), rem);
 endtask
 
 // -----------------------------------------------------------------------
@@ -167,7 +184,7 @@ task automatic write_elems_ddr(input [39:0] base, ref logic [15:0] elems[]);
         for (j = 0; j < per_chunk && i + j < total; j++)
             buf_mem[j*16 +: 16] = (i + j < n) ? elems[i + j] : 16'h0000;
         nb = ((total - i) < per_chunk ? (total - i) : per_chunk) * 2;
-        `PS.write_mem(buf_mem, base + 40'(i * 2), nb);
+        shadow_write_mem(buf_mem, base + 40'(i * 2), nb);
     end
 endtask
 

@@ -94,6 +94,18 @@ proc prepare_bd {} {
 
 prepare_bd
 
+# the testbench's AXI-Lite base addresses, from the HWH just generated
+source [file join $proj_root cormorant_hw_128.srcs sim_1 new gen_addr_map.tcl]
+
+# the RowOps testbench's fixtures: the parent repo's hw/test_data/rowops_test_data
+set ro_data [file normalize [file join $proj_root .. test_data rowops_test_data]]
+if {![file exists [file join $ro_data manifest.txt]]} {
+    error "sim.tcl: RowOps fixtures not found at $ro_data (hw/test_data/rowops_test_data/manifest.txt)"
+}
+set_property -name {xsim.simulate.xsim.more_options} \
+    -value "-testplusarg ROWOPS_DATA=$ro_data" -objects [get_filesets sim_1]
+puts "=== RowOps fixtures: $ro_data ==="
+
 # ---------------------------------------------------------------------------
 # Run behavioral simulation
 # ---------------------------------------------------------------------------

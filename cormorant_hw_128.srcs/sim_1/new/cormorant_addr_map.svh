@@ -6,4 +6,5 @@
 localparam logic [39:0] ConvKernel_0_BASE = 40'hA002_0000;
 localparam logic [39:0] MatmulKernel_0_BASE = 40'hA001_0000;
 localparam logic [39:0] PoolingKernel_0_BASE = 40'hA003_0000;
+localparam logic [39:0] RowOpsKernel_0_BASE = 40'hA004_0000;
 localparam logic [39:0] VectorOPKernel_0_BASE = 40'hA000_0000;

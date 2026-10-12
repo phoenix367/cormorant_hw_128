@@ -6,3 +6,6 @@
 # next value, one LUT each, and placed across the slice it was the design's
 # worst path (+0.017 ns at 4 ns).  Replicate it in synthesis.
 set_property MAX_FANOUT 32 [get_cells -quiet -hierarchical -filter {NAME =~ "*axi_interconnect_0/m00_couplers/m00_regslice/inst/*.?_pipe/s_ready_i_reg"}]
+# The RowOpsKernel's interconnect into S_AXI_HP0_FPD (scripts/bd_rowops_hp0.tcl)
+# has the same read + write MI slice.
+set_property MAX_FANOUT 32 [get_cells -quiet -hierarchical -filter {NAME =~ "*axi_rowops_intercon/m00_couplers/m00_regslice/inst/*.?_pipe/s_ready_i_reg"}]

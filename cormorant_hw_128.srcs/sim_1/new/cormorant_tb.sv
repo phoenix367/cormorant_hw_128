@@ -27,6 +27,7 @@ module cormorant_tb;
     `include "conv_regmap.svh"
     `include "mm_regmap.svh"
     `include "pk_regmap.svh"
+    `include "ro_regmap.svh"
 
     // -----------------------------------------------------------------------
     // Shared utilities, base classes, and per-kernel OOP class hierarchies
@@ -38,6 +39,7 @@ module cormorant_tb;
     `include "conv_classes.svh"
     `include "mm_classes.svh"
     `include "pk_classes.svh"
+    `include "ro_classes.svh"
     `include "tb_infra.svh"
 
     // -----------------------------------------------------------------------
@@ -47,6 +49,7 @@ module cormorant_tb;
     irq_if conv_irq_if(); assign conv_irq_if.sig = dut.ConvKernel_0_interrupt;
     irq_if mm_irq_if();   assign mm_irq_if.sig   = dut.MatmulKernel_0_interrupt;
     irq_if pk_irq_if();   assign pk_irq_if.sig   = dut.PoolingKernel_0_interrupt;
+    irq_if ro_irq_if();   assign ro_irq_if.sig   = dut.RowOpsKernel_0_interrupt;
 
     // -----------------------------------------------------------------------
     // Top-level test handles
@@ -55,7 +58,11 @@ module cormorant_tb;
     conv_test       ct;
     mm_test         mt;
     pk_test         pt;
+    ro_test         rt;
     base_scoreboard all_scbs[$];
+    // the RowOps fixtures (the parent repo's hw/test_data/rowops_test_data):
+    // +ROWOPS_DATA=<dir> (scripts/sim.tcl passes it), else relative to xsim's run dir
+    string          ro_data = "../../../../../test_data/rowops_test_data";
 
     // -----------------------------------------------------------------------
     // Main: PS VIP reset sequence → run all kernel tests → overall report
@@ -70,6 +77,7 @@ module cormorant_tb;
         `PS.S_AXI_HPC0_FPD.slave.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HPC1_FPD.slave.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HP2_FPD.slave.IF.set_xilinx_reset_check_to_warn();
+        `PS.S_AXI_HP0_FPD.slave.IF.set_xilinx_reset_check_to_warn();
 
         // POR + system reset, then PL fabric reset.
         `PS.por_srstb_reset(1'b0);   // assert  → DDR model enters reset
@@ -96,6 +104,7 @@ module cormorant_tb;
         // BEST_CASE (fixed 21-cycle) write-response latency on HPC0_FPD.
         `PS.set_slave_profile("S_AXI_HPC0_FPD", 0);
         `PS.set_slave_profile("S_AXI_HP2_FPD", 0);
+        `PS.set_slave_profile("S_AXI_HP0_FPD", 0);
 
         // HLS-generated 128-bit AXI masters leave WSTRB registers uninitialised
         // (X) in simulation before the first write beat is issued.  This is a
@@ -109,12 +118,15 @@ module cormorant_tb;
         ct = new(conv_irq_if); ct.run();
         mt = new(mm_irq_if);   mt.run();
         pt = new(pk_irq_if);   pt.run();
+        void'($value$plusargs("ROWOPS_DATA=%s", ro_data));
+        rt = new(ro_irq_if, 4, ro_data); rt.run();
 
         // Collect scoreboards for the overall report.
         all_scbs.push_back(vt.e.scb);
         all_scbs.push_back(ct.e.scb);
         all_scbs.push_back(mt.e.scb);
         all_scbs.push_back(pt.e.scb);
+        all_scbs.push_back(rt.e.scb);
 
         begin
             int unsigned total = 0, passed = 0, failed = 0;

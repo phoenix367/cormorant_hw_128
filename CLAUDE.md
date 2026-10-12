@@ -1,10 +1,12 @@
 # CLAUDE.md — cormorant_hw_128
 
 Vivado 2025.2 block design project for the **Xilinx KV260 Starter Kit**
-(xck26-sfvc784-2LV-c). Instantiates four accelerator IP cores (the
+(xck26-sfvc784-2LV-c). Instantiates five accelerator IP cores (the
 ConvKernel, the MatmulKernel, the VectorOPKernel and the PoolingKernel, all
-in SystemVerilog since 2026-10-06; the VLNVs of the retired Vitis HLS
-exports) connected to the Zynq MPSoC PS via a 128-bit AXI bus.
+in SystemVerilog since 2026-10-06, the VLNVs of the retired Vitis HLS
+exports; and since 2026-10-12 the RowOpsKernel, the parent repo's row-ops
+unit, `doc/plans/HOSTOPS_PLAN.md` phase 3) connected to the Zynq MPSoC PS via
+a 128-bit AXI bus.
 
 ## What Lives Here
 
@@ -15,7 +17,7 @@ exports) connected to the Zynq MPSoC PS via a 128-bit AXI bus.
 | `cormorant_hw_128.srcs/sources_1/bd/design_cormorant/ip/*/` | IP core configurations (`.xci`) |
 | `cormorant_hw_128.srcs/sim_1/new/` | Simulation testbench (SystemVerilog) |
 | `cormorant_tb_behav.wcfg` | Waveform configuration for Vivado simulator |
-| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`); the block-design edits (`bd_kernel_clock.tcl`, `bd_vop_b_hpc1.tcl`, `bd_conv_x_hp.tcl`; `bd_hp0_outputs.tcl`, an experiment not in the design) |
+| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`); the block-design edits (`bd_kernel_clock.tcl`, `bd_vop_b_hpc1.tcl`, `bd_conv_x_hp.tcl`, `bd_rowops_hp0.tcl`; `bd_hp0_outputs.tcl`, an experiment not in the design) |
 | `cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` | Timing constraints of the 250 MHz kernel clock |
 
 Generated directories (`*.runs/`, `*.gen/`, `*.ip_user_files/`, `*.sim/`,
@@ -32,6 +34,7 @@ The block design instantiates:
 | `MatmulKernel_0` | MatmulKernel | `0xA001_0000` | 128-bit AXI4: A/C on `S_AXI_HPC0_FPD`, B on `S_AXI_HPC1_FPD` |
 | `ConvKernel_0` | ConvKernel | `0xA002_0000` | 128-bit AXI4: x on `S_AXI_HP2_FPD`, y on `S_AXI_HPC0_FPD`, w/b on `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | PoolingKernel | `0xA003_0000` | 128-bit AXI4 on `S_AXI_HPC0_FPD` |
+| `RowOpsKernel_0` | RowOpsKernel (the row-ops unit) | `0xA004_0000` | one read + write 128-bit AXI4 port on `S_AXI_HP0_FPD` |
 | `zynq_ultra_ps_e_0` | Zynq MPSoC PS | — | AXI master + DDR controller |
 
 The kernel data masters are aggregated through `axi_interconnect_0` (into
@@ -41,13 +44,17 @@ The kernel data masters are aggregated through `axi_interconnect_0` (into
 `axi_x_intercon` (one master, ConvKernel's x read port, into the read-only
 `S_AXI_HP2_FPD`: past the CCI, which throttled its 144-byte bursts to ~0.4
 beats per cycle; the depthwise and few-channel 1 × 1 convolutions 27–67 %
-faster) on the PS.
+faster) on the PS; since 2026-10-12 (`scripts/bd_rowops_hp0.tcl`, the parent
+repo's `doc/plans/HOSTOPS_PLAN.md` phase 3) `axi_rowops_intercon` (one
+master, the RowOpsKernel's read + write port, register slices on both sides,
+into `S_AXI_HP0_FPD` — SAXIGP2, 128-bit, FPD switch → DDRC port 3).
 AXI-Lite control ports go from `M_AXI_HPM0_FPD` through the `axi_smc`
-SmartConnect. Each kernel drives an interrupt line back to the PS.
+SmartConnect (five masters). Each kernel drives an interrupt line back to the
+PS (`ilconcat_0` → `pl_ps_irq0`, the RowOpsKernel on In4).
 
 **Clock (since 2026-10-06, the parent repo's `doc/plans/FMAX_250_PLAN.md`).**
-Everything in the PL — the four kernels, the three interconnects, the SmartConnect,
-the PS-PL AXI port clocks (`maxihpm0_fpd_aclk`, `saxihpc0/1_fpd_aclk`, `saxihp2_fpd_aclk`) and the
+Everything in the PL — the five kernels, the four interconnects, the SmartConnect,
+the PS-PL AXI port clocks (`maxihpm0_fpd_aclk`, `saxihpc0/1_fpd_aclk`, `saxihp0/2_fpd_aclk`) and the
 reset block — runs on `clk_wiz_0/clk_out1`, **250 MHz** (249.9975: an MMCM
 fed by `pl_clk0`, which stays at the boot firmware's 100 MHz).  The bitstream
 thus defines its own kernel clock; PL0 only feeds the MMCM, and the parent
@@ -71,7 +78,10 @@ activation unit (the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) WNS
 (`doc/plans/PS_PORTS_PLAN.md` §5) WNS +0.114 ns, WHS +0.010 ns (bitstream
 `8599aa7a5f12`); with ConvKernel's x port on HP2 and its overlapped
 line-buffer loads (`doc/plans/DEPTHWISE_PLAN.md` §8) WNS +0.098 ns, WHS
-+0.010 ns (bitstream `f70ce632a97a`, production).
++0.010 ns (bitstream `f70ce632a97a`); with the RowOpsKernel and its
+interconnect on HP0 (`doc/plans/HOSTOPS_PLAN.md` phase 3) WNS +0.020 ns,
+WHS +0.010 ns (bitstream `1cedaf2ed816`, production: 93 969 LUT, 113 020
+FF, 136 / 144 BRAM tiles, 55 / 64 URAM, 833 DSP).
 
 Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
 `S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
@@ -160,6 +170,7 @@ pattern in plain SystemVerilog (no UVM library dependency). All files are
 | `conv_regmap.svh` | ConvKernel register offsets and DDR layout |
 | `mm_regmap.svh` | MatmulKernel register offsets and DDR layout |
 | `pk_regmap.svh` | PoolingKernel register offsets and DDR layout |
+| `ro_regmap.svh` | RowOpsKernel register offsets, op-word fields, the table-load job and DDR buffers |
 | `axil_agent.svh` | Virtual base class: `axil_write` / `axil_read` via PS VIP |
 | `base_scoreboard.svh` | Abstract base: pass/fail counters, `check()`, `report()` |
 | `tb_functions.svh` | Fixed-point reference helpers: `ref_add` … `ref_relu6`, `compute_*_const`, `ref_poly_sqrt`, `conv_const_weights`, DDR fills |
@@ -168,7 +179,8 @@ pattern in plain SystemVerilog (no UVM library dependency). All files are
 | `conv_classes.svh` | `conv_item`, `conv_driver`, `conv_monitor`, `conv_scoreboard`, `conv_env`, `conv_test` |
 | `mm_classes.svh` | `mm_item`, `mm_driver`, `mm_monitor`, `mm_scoreboard`, `mm_env`, `mm_test` |
 | `pk_classes.svh` | `pk_item`, `pk_driver`, `pk_monitor`, `pk_scoreboard`, `pk_env`, `pk_test` |
-| `gen_addr_map.tcl` | Vivado Tcl script that reads the `.hwh` and writes `cormorant_addr_map.svh` |
+| `ro_classes.svh` | `ro_item`, `ro_driver`, `ro_monitor`, `ro_scoreboard`, `ro_env`, `ro_test` — the RowOpsKernel's checked-in fixtures (the parent repo's `hw/test_data/rowops_test_data`, `+ROWOPS_DATA=<dir>`, which `scripts/sim.tcl` passes): the table load, then every fixture's A / B / P images in DDR, the C region poisoned and compared byte for byte with the fixture (untouched bytes keep the poison) |
+| `gen_addr_map.tcl` | Vivado Tcl script that reads the `.hwh` and writes `cormorant_addr_map.svh` (`scripts/sim.tcl` runs it after generating the block design) |
 
 ### Class Hierarchy
 
@@ -212,8 +224,9 @@ The testbench prints a per-kernel pass/fail table and a combined summary
 ##            ConvKernel   17 /  17  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
+##          RowOpsKernel   28 /  28  (0 failed)
 ##########################################################
-##  TOTAL: 75 / 75 passed
+##  TOTAL: 103 / 103 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
@@ -287,7 +300,11 @@ The testbench `ELEM_BYTES` localparam and the fixed-point helpers in
 - **DDRC write-commit workaround** (`tb_infra.svh`): the PS VIP `arb_wr_6`
   module races between active/inactive regions on `wr_req`. The fix intercepts
   every `wr_req` rising edge at +1 ns and commits bytes directly into
-  `ddr_mem0`/`ddr_mem1`.
+  `ddr_mem0`/`ddr_mem1`; the bytes a beat leaves unstrobed are restored from
+  the shadow of everything written (`tb_functions.svh` `shadow_mem`, filled by
+  every backdoor write and every strobed beat) — the VIP's own racing write
+  deposits stale or zero bytes there (seen on the HP0 port: the 32 bytes after
+  a 48-byte RowOps row read back as zeros).
 - **WSTRB X**: HLS-generated 128-bit AXI masters leave `WSTRB` uninitialized
   before the first write beat. This triggers a false-positive AXI protocol
   checker error in simulation; the `$assertoff` line in `cormorant_tb.sv` can
