@@ -224,9 +224,9 @@ The testbench prints a per-kernel pass/fail table and a combined summary
 ##            ConvKernel   17 /  17  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
-##          RowOpsKernel   28 /  28  (0 failed)
+##          RowOpsKernel   29 /  29  (0 failed)
 ##########################################################
-##  TOTAL: 103 / 103 passed
+##  TOTAL: 104 / 104 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
