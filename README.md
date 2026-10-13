@@ -85,7 +85,7 @@ source scripts/sim.tcl
 ```
 
 The run takes ~4 minutes (104 cases: the four kernels' constant-fill cases and the RowOpsKernel's 29 —
-its table load and its 21 checked-in fixtures — through the PS VIP's DDR
+its table load and its 28 checked-in fixtures — through the PS VIP's DDR
 model) and ends with:
 
 ```
@@ -109,14 +109,14 @@ failure).  The testbench (`cormorant_hw_128.srcs/sim_1/new/`) writes every
 buffer the way the kernels read it: whole 16-byte words, VectorOP row
 strides of 0 or multiples of 8 elements, ConvKernel weights in the packed
 tile-major layout (`tb_functions.svh` `conv_const_weights`, see the parent
-repo's `kernels/conv/include/ConvKernel.h`), and the LpPool p=2 reference
+repo's `kernels/conv_rtl/model/include/ConvKernel.h`), and the LpPool p=2 reference
 mirrors the kernel's fixed-point `poly_sqrt` bit for bit.
 
 ## Block Design
 
 | Instance | IP | AXI-Lite base | Data bus |
 |----------|----|--------------|----------|
-| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6, fused Relu / Relu6 `act`) — the parent repo's SystemVerilog kernel (`kernels/vectorop_rtl`, `make package_vectorop_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA000_0000` | gmem0–2 → `S_AXI_HPC0_FPD` |
+| `VectorOPKernel_0` | Element-wise ops (Add/Sub/Mul/Div/Relu/Relu6), the activation unit (LeakyReLU, SiLU, GELU, GELU tanh — as ops or a fused `act`) and the softmax unit (rows / keys-major columns) — the parent repo's SystemVerilog kernel (`kernels/vectorop_rtl`, `make package_vectorop_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA000_0000` | gmem0 (a), gmem2 (c) → `S_AXI_HPC0_FPD`; gmem1 (b) → `S_AXI_HPC1_FPD` |
 | `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming — the parent repo's SystemVerilog kernel (`kernels/matmul_rtl`, `make package_matmul_rtl`; same VLNV as the retired HLS one) | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
 | `ConvKernel_0` | 2-D convolution (NCHW), MatMuls as convs — the parent repo's SystemVerilog kernel (`kernels/conv_rtl`, `make package_conv_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA002_0000` | gmem0 → `S_AXI_HP2_FPD`; gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | Max/Avg/Lp/Global pooling — the parent repo's SystemVerilog kernel (`kernels/pool_rtl`, `make package_pool_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA003_0000` | gmem0–1 → `S_AXI_HPC0_FPD` |
@@ -139,11 +139,15 @@ at 32 until 2026-09-24, which capped all PL↔DDR traffic at 32 bits ×
 `upload_bitstream.py` also writes the AFIFM width registers after the
 overlay.)  The AXI-Lite control ports hang off `M_AXI_HPM0_FPD` through
 the `axi_smc` SmartConnect.
-Each kernel drives an interrupt line back to the PS.
+Each kernel drives a level-high interrupt line back to the PS through
+`ilconcat_0` into `pl_ps_irq0`: VectorOPKernel bit 0, MatmulKernel 1,
+ConvKernel 2, PoolingKernel 3, RowOpsKernel 4 — SPIs 89–93 (GIC ids
+121–125), the numbers the parent repo's overlay (`dts/kv260/cormorant.dts`)
+and the R5's BSP use.
 
 **Clock (since 2026-10-06, the parent repo's `doc/plans/FMAX_250_PLAN.md`).**
-Everything in the PL — the four kernels, the three interconnects, the SmartConnect,
-the PS-PL AXI port clocks (`maxihpm0_fpd_aclk`, `saxihpc0/1_fpd_aclk`, `saxihp2_fpd_aclk`) and the
+Everything in the PL — the five kernels, the four data interconnects, the SmartConnect,
+the PS-PL AXI port clocks (`maxihpm0_fpd_aclk`, `saxihpc0/1_fpd_aclk`, `saxihp0/2_fpd_aclk`) and the
 reset block — runs on `clk_wiz_0/clk_out1`, **250 MHz** (249.9975: an MMCM
 fed by `pl_clk0`, which stays at the boot firmware's 100 MHz).  The bitstream
 thus defines its own kernel clock; PL0 only feeds the MMCM, and the parent
@@ -151,10 +155,11 @@ repo's loader checks it against the HWH's 100 MHz before programming (and
 sets it when it differs), so a stale PL0 setting can neither change the
 kernel clock nor overclock an older 100 MHz bitstream.
 `pl_resetn0` resets the MMCM; its `locked` holds `rst_ps8_0_99M`
-(`dcm_locked`).  The two data interconnects carry register slices ("Outer")
-on every SI and on `axi_interconnect_0`'s MI (the read-only HPC1 MI has
-none); `cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` replicates the
-HPC0 slice's ready.  `scripts/bd_kernel_clock.tcl` makes all of it from the
+(`dcm_locked`).  The four data interconnects carry register slices ("Outer")
+on every SI, and on the MIs of `axi_interconnect_0` and `axi_rowops_intercon`
+(the read-only HPC1 and HP2 MIs have none);
+`cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` replicates the ready
+of those two MI slices.  `scripts/bd_kernel_clock.tcl` makes all of it from the
 100 MHz design (idempotent), and `scripts/build.tcl` runs impl_1 with
 `place_design ExtraTimingOpt`, `phys_opt_design` / `route_design`
 `AggressiveExplore` and post-route `phys_opt_design` — with the project's
@@ -191,7 +196,13 @@ sim.sh                                       Shell wrapper: behavioral simulatio
 scripts/build.tcl                            Tcl build script (stage + job-count selection)
 scripts/sim.tcl                              Tcl simulation script
 scripts/ip_defaults.tcl                      Kernel instance m_axi widths := the IP defaults
+scripts/bd_kernel_clock.tcl                  Block-design edit: the 250 MHz MMCM, register slices
+scripts/bd_vop_b_hpc1.tcl                    Block-design edit: VectorOPKernel b on S_AXI_HPC1_FPD
+scripts/bd_conv_x_hp.tcl                     Block-design edit: ConvKernel x on S_AXI_HP2_FPD
+scripts/bd_rowops_hp0.tcl                    Block-design edit: the RowOpsKernel on S_AXI_HP0_FPD
+scripts/bd_hp0_outputs.tcl                   An experiment, not in the design (outputs on HP0)
 cormorant_hw_128.srcs/
+  constrs_1/new/kernel_clock.xdc             Timing constraints of the 250 MHz kernel clock
   sources_1/bd/design_cormorant/
     design_cormorant.bd                      Block diagram
     design_cormorant.bda                     Automation settings
@@ -200,7 +211,7 @@ cormorant_hw_128.srcs/
   sim_1/new/
     cormorant_tb.sv                          Testbench top module
     cormorant_addr_map.svh                   AXI-Lite base addresses
-    {vop,conv,mm,pk}_regmap.svh              Per-kernel register maps
+    {vop,conv,mm,pk,ro}_regmap.svh           Per-kernel register maps
     {vop,conv,mm,pk,ro}_classes.svh          Per-kernel test class hierarchies
     axil_agent.svh                           AXI-Lite read/write base class
     base_scoreboard.svh                      Pass/fail counter base class
