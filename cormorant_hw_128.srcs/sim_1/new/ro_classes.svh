@@ -251,8 +251,8 @@ class ro_test;
     // the manifest's row -> an item with its images
     function ro_item parse(string line);
         ro_item it;
-        int idx, op, n, c1, c2, a_s1, a_s2, b_s1, b_s2, c_s1, c_s2, aux, bq_sh;
-        longint eps, win_lo, win_hi;
+        int idx, op, n, c1, c2, a_s1, b_s1, c_s1, c_s2, aux, bq_sh;
+        longint eps, win_lo, win_hi, a_s2, b_s2;          // FOLD: a signed stride / column as unsigned 32 bits
         string label, pre;
         if ($sscanf(line, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %s",
                     idx, op, n, c1, c2, a_s1, a_s2, b_s1, b_s2, c_s1, c_s2, eps, aux, bq_sh,
@@ -260,7 +260,7 @@ class ro_test;
             return null;
         it = new(label);
         it.idx = idx; it.op = op; it.n = n; it.rows = c1; it.blocks = c2;
-        it.a_s1 = a_s1; it.a_s2 = a_s2; it.b_s1 = b_s1; it.b_s2 = b_s2; it.c_s1 = c_s1; it.c_s2 = c_s2;
+        it.a_s1 = a_s1; it.a_s2 = a_s2[31:0]; it.b_s1 = b_s1; it.b_s2 = b_s2[31:0]; it.c_s1 = c_s1; it.c_s2 = c_s2;
         it.eps = eps; it.aux = aux; it.bq_sh = bq_sh; it.win_lo = win_lo[31:0]; it.win_hi = win_hi[31:0];
         pre = $sformatf("%s/test_%02d_", data_dir, idx);
         void'(ro_read_hex({pre, "a.hex"}, it.img_a));

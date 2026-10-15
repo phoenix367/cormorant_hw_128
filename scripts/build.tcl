@@ -128,9 +128,18 @@ proc run_synth {jobs} {
     set state [get_property STATUS [get_runs $run]]
     puts "=== Synthesis: current status = $state ==="
 
+    # Out of date after an IP upgrade (NEEDS_REFRESH, or only the status
+    # "...Out-of-date"): reset.  An implementation run killed mid-way stays
+    # "running" and silently blocks the reset of its parent, so reset it first
+    # — and never go on with a stale netlist.
     if {[get_property NEEDS_REFRESH [get_runs $run]] ||
-        $state eq "Not started"} {
+        $state eq "Not started" || [string match {*Out-of-date*} $state]} {
+        reset_run impl_1
         reset_run $run
+    }
+    set state [get_property STATUS [get_runs $run]]
+    if {[string match {*Out-of-date*} $state]} {
+        error "synth_1 is out of date and could not be reset (status '$state'): remove cormorant_hw_128.runs/synth_1 and impl_1, then build again"
     }
 
     if {[get_property PROGRESS [get_runs $run]] ne "100%"} {
@@ -180,8 +189,10 @@ proc run_impl {jobs} {
     set state [get_property STATUS [get_runs $run]]
     puts "=== Implementation: current status = $state ==="
 
+    # an IP upgrade leaves NEEDS_REFRESH at 0 but the status "...Out-of-date":
+    # without the reset the run counts as complete and the old netlist is used
     if {[get_property NEEDS_REFRESH [get_runs $run]] ||
-        $state eq "Not started"} {
+        $state eq "Not started" || [string match {*Out-of-date*} $state]} {
         reset_run $run
     }
 

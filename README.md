@@ -84,7 +84,7 @@ Or from the Vivado Tcl console:
 source scripts/sim.tcl
 ```
 
-The run takes ~4 minutes (104 cases: the four kernels' constant-fill cases and the RowOpsKernel's 29 —
+The run takes ~4 minutes (112 cases: the four kernels' constant-fill cases and the RowOpsKernel's 37 —
 its table load and its 28 checked-in fixtures — through the PS VIP's DDR
 model) and ends with:
 
@@ -96,9 +96,9 @@ model) and ends with:
 ##            ConvKernel   17 /  17  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
-##          RowOpsKernel   29 /  29  (0 failed)
+##          RowOpsKernel   37 /  37  (0 failed)
 ##########################################################
-##  TOTAL: 104 / 104 passed
+##  TOTAL: 112 / 112 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
@@ -174,8 +174,11 @@ activation unit (the parent repo's `doc/plans/ACTIVATIONS_PLAN.md`) WNS
 line-buffer loads (`doc/plans/DEPTHWISE_PLAN.md` §8) WNS +0.098 ns, WHS
 +0.010 ns (bitstream `f70ce632a97a`); with the RowOpsKernel and its
 interconnect on HP0 (`doc/plans/HOSTOPS_PLAN.md` phase 3) WNS +0.020 ns,
-WHS +0.010 ns (bitstream `1cedaf2ed816`, production: 93 969 LUT, 136 / 144
-BRAM tiles, 55 / 64 URAM, 833 DSP).
+WHS +0.010 ns (bitstream `1cedaf2ed816`: 93 969 LUT, 136 / 144 BRAM tiles,
+55 / 64 URAM, 833 DSP); with the row-ops unit's FOLD and the kernels' area
+pass (the parent repo's `doc/plans/HOSTOPS_PLAN.md` §11, `doc/plans/AREA_PLAN.md`)
+WNS +0.029 ns, WHS +0.010 ns (bitstream `de968ccc45da`, production: 89 547
+LUT, 136 / 144 BRAM tiles, 55 / 64 URAM, 841 DSP).
 
 Instance widths follow the IPs: after the IP upgrade, `build.tcl` and
 `sim.tcl` put every kernel instance's `C_M_AXI_*_DATA_WIDTH` back to the
