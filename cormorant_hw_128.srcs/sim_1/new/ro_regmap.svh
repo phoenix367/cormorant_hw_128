@@ -32,6 +32,12 @@ localparam [39:0] RO_REG_AUX     = RO_BASE + 40'h60;   // ROPE head dim / TRANSP
 localparam [39:0] RO_REG_BQ_SH   = RO_BASE + 40'h64;   // beta shift
 localparam [39:0] RO_REG_WIN_LO  = RO_BASE + 40'h68;   // window (ADDX / NORM rows kept)
 localparam [39:0] RO_REG_WIN_HI  = RO_BASE + 40'h6c;
+// descriptor chains (the parent repo's RPU_PLAN §13.3): one Start runs the
+// chain_n (<= 16) descriptors at chain — 128 bytes each, words 0..23 the
+// argument registers 0x10..0x6c in order; chain_n = 0: the job of the registers
+localparam [39:0] RO_REG_CHAIN_LO = RO_BASE + 40'h70;
+localparam [39:0] RO_REG_CHAIN_HI = RO_BASE + 40'h74;
+localparam [39:0] RO_REG_CHAIN_N  = RO_BASE + 40'h78;
 
 // op word: [3:0] op, [5:4] A kind, [7:6] B kind, [9:8] C kind (0 i16, 1 i32,
 // 2 f32), bit 12 B_EN, 13 P_BCAST, 14 P_KEEP, 15 RELU, 16 NORM_LN
@@ -59,5 +65,8 @@ localparam [39:0] RO_BUF_A    = RO_DDR_BASE + 40'h0010_0000;
 localparam [39:0] RO_BUF_B    = RO_DDR_BASE + 40'h0020_0000;
 localparam [39:0] RO_BUF_P    = RO_DDR_BASE + 40'h0030_0000;
 localparam [39:0] RO_BUF_C    = RO_DDR_BASE + 40'h0040_0000;
+// the chain fixtures: a chain's segment, and its descriptor list across a 4 KiB boundary
+localparam [39:0] RO_BUF_SEG  = RO_DDR_BASE + 40'h0050_0000;
+localparam [39:0] RO_BUF_DESC = RO_DDR_BASE + 40'h0060_1000 - 40'd48;
 localparam int unsigned RO_IMG_MAX = 65536;              // the largest region (the table image)
 localparam [7:0]        RO_POISON  = 8'hDE;              // gen_fixtures.py: the C region's fill

@@ -31,3 +31,8 @@ localparam [39:0] CK_PAD_TOP      = CK_BASE + 40'hA8;
 localparam [39:0] CK_PAD_LEFT     = CK_BASE + 40'hB0;
 localparam [39:0] CK_HAS_BIAS     = CK_BASE + 40'hB8;
 localparam [39:0] CK_IS_DEPTHWISE = CK_BASE + 40'hC0;
+// the y channel pattern (the parent repo's RPU_PLAN §13.2): channel c at
+// (c mod y_cn) * y_cs + (c div y_cn) * y_gs elements; 0 0 0 = dense NCHW
+localparam [39:0] CK_Y_CS         = CK_BASE + 40'hC8;
+localparam [39:0] CK_Y_CN         = CK_BASE + 40'hD0;
+localparam [39:0] CK_Y_GS         = CK_BASE + 40'hD8;

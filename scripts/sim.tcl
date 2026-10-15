@@ -136,10 +136,14 @@ if {![file exists $sim_log]} {
     set content [read $fp]
     close $fp
 
-    if {[regexp {SIMULATION FAILED} $content]} {
+    # the pass is the testbench's OVERALL summary (cormorant_tb.sv: "##  ALL
+    # TESTS PASSED"), not a kernel's own (" ALL TESTS PASSED", printed before the
+    # next kernel runs): a simulator crash after some kernels' summaries
+    # (FATAL_ERROR, no overall summary) once read as a pass
+    if {[regexp {SIMULATION FAILED|FATAL_ERROR} $content]} {
         puts "=== SIMULATION FAILED — see [file normalize $sim_log] ==="
         exit 1
-    } elseif {[regexp {ALL TESTS PASSED} $content]} {
+    } elseif {[regexp {##  ALL TESTS PASSED} $content]} {
         puts "=== ALL TESTS PASSED ==="
     } else {
         # no summary: the testbench stopped early (e.g. an AXI protocol

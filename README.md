@@ -84,21 +84,21 @@ Or from the Vivado Tcl console:
 source scripts/sim.tcl
 ```
 
-The run takes ~4 minutes (112 cases: the four kernels' constant-fill cases and the RowOpsKernel's 37 —
-its table load and its 28 checked-in fixtures — through the PS VIP's DDR
-model) and ends with:
+The run takes ~8 minutes (116 cases: the four kernels' constant-fill cases — ConvKernel's with two
+y channel-pattern cases — and the RowOpsKernel's 39 — its table load, its 36 checked-in fixtures and
+its 2 descriptor chains — through the PS VIP's DDR model) and ends with:
 
 ```
 ##########################################################
 ##  CORMORANT TESTBENCH — OVERALL RESULTS
 ##########################################################
 ##        VectorOPKernel   29 /  29  (0 failed)
-##            ConvKernel   17 /  17  (0 failed)
+##            ConvKernel   19 /  19  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
-##          RowOpsKernel   37 /  37  (0 failed)
+##          RowOpsKernel   39 /  39  (0 failed)
 ##########################################################
-##  TOTAL: 112 / 112 passed
+##  TOTAL: 116 / 116 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```

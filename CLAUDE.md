@@ -180,10 +180,10 @@ pattern in plain SystemVerilog (no UVM library dependency). All files are
 | `tb_functions.svh` | Fixed-point reference helpers: `ref_add` … `ref_relu6`, `compute_*_const`, `ref_poly_sqrt`, `conv_const_weights`, DDR fills |
 | `tb_infra.svh` | PS VIP DDRC write-commit workaround (inactive-region race fix) |
 | `vop_classes.svh` | `vop_item`, `vop_driver`, `vop_monitor`, `vop_scoreboard`, `vop_env`, `vop_test` |
-| `conv_classes.svh` | `conv_item`, `conv_driver`, `conv_monitor`, `conv_scoreboard`, `conv_env`, `conv_test` |
+| `conv_classes.svh` | `conv_item`, `conv_driver`, `conv_monitor`, `conv_scoreboard`, `conv_env`, `conv_test` — with two y channel-pattern cases (`y_cs` / `y_cn` / `y_gs`, the parent repo's `doc/kernels/CONV_RTL_KERNEL.md`): the whole span is poisoned, every plane compared and every gap must keep the poison |
 | `mm_classes.svh` | `mm_item`, `mm_driver`, `mm_monitor`, `mm_scoreboard`, `mm_env`, `mm_test` |
 | `pk_classes.svh` | `pk_item`, `pk_driver`, `pk_monitor`, `pk_scoreboard`, `pk_env`, `pk_test` |
-| `ro_classes.svh` | `ro_item`, `ro_driver`, `ro_monitor`, `ro_scoreboard`, `ro_env`, `ro_test` — the RowOpsKernel's checked-in fixtures (the parent repo's `hw/test_data/rowops_test_data`, `+ROWOPS_DATA=<dir>`, which `scripts/sim.tcl` passes): the table load, then every fixture's A / B / P images in DDR, the C region poisoned and compared byte for byte with the fixture (untouched bytes keep the poison) |
+| `ro_classes.svh` | `ro_item`, `ro_driver`, `ro_monitor`, `ro_scoreboard`, `ro_env`, `ro_test` — the RowOpsKernel's checked-in fixtures (the parent repo's `hw/test_data/rowops_test_data`, `+ROWOPS_DATA=<dir>`, which `scripts/sim.tcl` passes): the table load, then every fixture's A / B / P images in DDR, the C region poisoned and compared byte for byte with the fixture (untouched bytes keep the poison); then the descriptor chains (`chains/`: the descriptors built from the manifest, one Start per chain, the whole segment compared) |
 | `gen_addr_map.tcl` | Vivado Tcl script that reads the `.hwh` and writes `cormorant_addr_map.svh` (`scripts/sim.tcl` runs it after generating the block design) |
 
 ### Class Hierarchy
@@ -225,12 +225,12 @@ The testbench prints a per-kernel pass/fail table and a combined summary
 ##  CORMORANT TESTBENCH — OVERALL RESULTS
 ##########################################################
 ##        VectorOPKernel   29 /  29  (0 failed)
-##            ConvKernel   17 /  17  (0 failed)
+##            ConvKernel   19 /  19  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
-##          RowOpsKernel   37 /  37  (0 failed)
+##          RowOpsKernel   39 /  39  (0 failed)
 ##########################################################
-##  TOTAL: 112 / 112 passed
+##  TOTAL: 116 / 116 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```

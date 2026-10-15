@@ -24,6 +24,7 @@ class conv_item;
     int unsigned pad_top, pad_left;
     int unsigned has_bias;
     int unsigned is_depthwise;
+    int unsigned y_cs = 0, y_cn = 0, y_gs = 0;   // the y channel pattern (0 0 0: dense)
 
     logic [15:0] x_val;
     logic [15:0] w_val;
@@ -92,10 +93,35 @@ class conv_item;
 
     function string to_string();
         return $sformatf(
-            "%-32s  N=%0d IC=%0d IH=%0d IW=%0d  OC=%0d OH=%0d OW=%0d  k=%0dx%0d s=%0dx%0d d=%0dx%0d p=%0d,%0d  bias=%0d dw=%0d  x=0x%04h w=0x%04h  exp_y=0x%04h",
+            "%-32s  N=%0d IC=%0d IH=%0d IW=%0d  OC=%0d OH=%0d OW=%0d  k=%0dx%0d s=%0dx%0d d=%0dx%0d p=%0d,%0d  bias=%0d dw=%0d  x=0x%04h w=0x%04h  exp_y=0x%04h  y=(%0d,%0d,%0d)",
             label, batch, in_ch, in_h, in_w, out_ch, out_h, out_w,
             kh, kw, stride_h, stride_w, dilation_h, dilation_w,
-            pad_top, pad_left, has_bias, is_depthwise, x_val, w_val, y_expected);
+            pad_top, pad_left, has_bias, is_depthwise, x_val, w_val, y_expected, y_cs, y_cn, y_gs);
+    endfunction
+
+    function void set_pattern(int unsigned cs, int unsigned cn, int unsigned gs);
+        y_cs = cs; y_cn = cn; y_gs = gs;
+    endfunction
+
+    function bit has_pattern();
+        return (y_cs != 0) || (y_cn != 0) || (y_gs != 0);
+    endfunction
+
+    // element offset of channel c (the pattern needs one image)
+    function int unsigned y_base(int unsigned c);
+        int unsigned cs;
+        cs = (y_cs != 0) ? y_cs : out_h * out_w;
+        return (y_cn != 0) ? (c % y_cn) * cs + (c / y_cn) * y_gs : c * cs;
+    endfunction
+
+    // elements from y to one past the last one written
+    function int unsigned y_span();
+        int unsigned e;
+        if (!has_pattern()) return batch * out_ch * out_h * out_w;
+        e = 0;
+        for (int unsigned c = 0; c < out_ch; c++)
+            if (y_base(c) + out_h * out_w > e) e = y_base(c) + out_h * out_w;
+        return e;
     endfunction
 endclass
 
@@ -113,7 +139,7 @@ class conv_driver extends axil_agent;
 
         x_bytes = item.batch  * item.in_ch  * item.in_h  * item.in_w  * ELEM_BYTES;
         b_bytes = align_up(item.out_ch, CONV_PORT_ELEMS) * ELEM_BYTES;
-        y_bytes = item.batch  * item.out_ch * item.out_h * item.out_w * ELEM_BYTES;
+        y_bytes = item.y_span() * ELEM_BYTES;              // the strided span with a pattern
 
         $display("[%0t][CK_DRV] Loading x (%0d B, val=0x%04h) ...",
                  $time, x_bytes, item.x_val);
@@ -159,6 +185,9 @@ class conv_driver extends axil_agent;
         axil_write(CK_PAD_LEFT,      32'(item.pad_left));
         axil_write(CK_HAS_BIAS,      32'(item.has_bias));
         axil_write(CK_IS_DEPTHWISE,  32'(item.is_depthwise));
+        axil_write(CK_Y_CS,          32'(item.y_cs));      // always: a register keeps its value
+        axil_write(CK_Y_CN,          32'(item.y_cn));
+        axil_write(CK_Y_GS,          32'(item.y_gs));
         axil_write(CK_GIE,           32'h1);
         axil_write(CK_IER,           32'h1);
         $display("[%0t][CK_DRV] Asserting ap_start ...", $time);
@@ -241,6 +270,36 @@ class conv_scoreboard extends base_scoreboard;
                  item.batch * item.out_ch * item.out_h * item.out_w - 1,
                  item.batch * item.out_ch * item.out_h * item.out_w,
                  ELEM_BYTES, n_bytes, item.y_expected);
+
+        if (item.has_pattern()) begin
+            // every channel's plane the constant, every gap of the span still poison
+            int unsigned span, hw, at, c;
+            bit in_plane;
+            span = item.y_span();
+            hw   = item.out_h * item.out_w;
+            for (int unsigned off = 0; off < align_up(span * ELEM_BYTES, 16); off += CHUNK_BYTES) begin
+                int unsigned len;
+                len = (align_up(span * ELEM_BYTES, 16) - off < CHUNK_BYTES)
+                    ? align_up(span * ELEM_BYTES, 16) - off : CHUNK_BYTES;
+                `PS.read_mem(item.addr_y + 40'(off), len, chunk_buf);
+                for (w = 0; w < len / 2; w++) begin
+                    at = off / 2 + w;
+                    in_plane = 0;
+                    for (c = 0; c < item.out_ch; c++)
+                        if (at >= item.y_base(c) && at < item.y_base(c) + hw) in_plane = 1;
+                    elem = chunk_buf[w*16 +: 16];
+                    if (elem !== (in_plane ? item.y_expected : POISON)) begin
+                        if (errors < 5)
+                            $display("[%0t][CK_SCB] MISMATCH y+%0d (%s): got=0x%04h  exp=0x%04h",
+                                     $time, at, in_plane ? "plane" : "gap", elem,
+                                     in_plane ? item.y_expected : POISON);
+                        errors++;
+                    end
+                end
+            end
+            n_chunks = 0;                      // the dense pass below is done
+            rem      = 0;
+        end
 
         for (int i = 0; i < int'(n_chunks); i++) begin
             `PS.read_mem(item.addr_y + 40'(i * CHUNK_BYTES), CHUNK_BYTES, chunk_buf);
@@ -447,6 +506,20 @@ class conv_test;
                  /*has_bias=*/0,
                  16'h0100, 16'h0100, 16'h0000,
                  /*is_depthwise=*/1);
+        tests.push_back(it);
+
+        // ---- The y channel pattern (RPU_PLAN §13.2) ----------------------
+        // an attention P.V's layout: 3 heads x 16 rows of 4 x 16 = 64 pixels per
+        // channel, channel p = h' * 16 + t at t * 576 + h' * 64 (cs 576, cn 16, gs 64)
+        it = new("ypat attention G=3 T=16 HD=64",
+                 1, 16, 4, 16,  48, 4, 16,  1, 1);
+        it.set_pattern(576, 16, 64);
+        tests.push_back(it);
+
+        // odd strides (partial strobes), a partial m-tile: 20 channels of 3 x 3
+        it = new("ypat odd cs=23 cn=16 gs=11 OC=20",
+                 1, 4, 3, 3,  20, 3, 3,  1, 1);
+        it.set_pattern(23, 16, 11);
         tests.push_back(it);
 
         // ---- Run all tests -----------------------------------------------

@@ -70,18 +70,38 @@ function automatic bit ro_read_hex(string path, ref byte unsigned img[]);
     return 1;
 endfunction
 
-// write a byte image to DDR through the PS VIP, in CHUNK_BYTES pieces
+// write a byte image to DDR through the PS VIP, in CHUNK_BYTES pieces that
+// never cross a 4 KiB boundary (the VIP's write is one AXI burst)
 task automatic ro_write_ddr(input [39:0] base, ref byte unsigned img[]);
     logic [CHUNK_BITS-1:0] buf_mem;
-    int unsigned total, i, j, nb;
+    int unsigned total, i, j, nb, to4k;
     total = img.size();
-    for (i = 0; i < total; i += CHUNK_BYTES) begin
+    for (i = 0; i < total; i += nb) begin
         buf_mem = '0;
         nb = (total - i < CHUNK_BYTES) ? total - i : CHUNK_BYTES;
+        to4k = 4096 - int'((base + 40'(i)) & 40'hFFF);
+        if (nb > to4k) nb = to4k;
         for (j = 0; j < nb; j++) buf_mem[j*8 +: 8] = img[i + j];
         shadow_write_mem(buf_mem, base + 40'(i), nb);
     end
 endtask
+
+// the whitespace-separated fields of a line
+function automatic void ro_split(string line, ref string tok[$]);
+    int s;
+    tok.delete();
+    s = -1;
+    for (int i = 0; i <= line.len(); i++) begin
+        bit sp;
+        sp = (i == line.len()) || line[i] == 8'h20 || line[i] == 8'h09 || line[i] == 8'h0a || line[i] == 8'h0d;
+        if (sp && s >= 0) begin
+            tok.push_back(line.substr(s, i - 1));
+            s = -1;
+        end else if (!sp && s < 0) begin
+            s = i;
+        end
+    end
+endfunction
 
 // =========================================================================
 // ro_driver — loads DDR, programs the registers, starts the job
@@ -130,6 +150,26 @@ class ro_driver extends axil_agent;
         axil_write(RO_REG_IER,    32'h1);
         $display("[%0t][RO_DRV] Asserting ap_start ...", $time);
         axil_write(RO_REG_AP_CTRL, 32'h1);
+    endtask
+
+    // a descriptor chain: its segment and its descriptor list in DDR, chain /
+    // chain_n, Start; the argument registers are not used (left as they are)
+    task run_chain(string label, ref byte unsigned seg[], ref byte unsigned desc[], input int unsigned n);
+        $display("[%0t][RO_DRV] chain %s: %0d jobs, segment %0d bytes at 0x%010h, descriptors at 0x%010h",
+                 $time, label, n, seg.size(), RO_BUF_SEG, RO_BUF_DESC);
+        ro_write_ddr(RO_BUF_SEG, seg);
+        ro_write_ddr(RO_BUF_DESC, desc);
+        axil_write(RO_REG_CHAIN_LO, RO_BUF_DESC[31:0]);
+        axil_write(RO_REG_CHAIN_HI, {24'h0, RO_BUF_DESC[39:32]});
+        axil_write(RO_REG_CHAIN_N,  32'(n));
+        axil_write(RO_REG_GIE,      32'h1);
+        axil_write(RO_REG_IER,      32'h1);
+        axil_write(RO_REG_AP_CTRL,  32'h1);
+    endtask
+
+    // back to single jobs (chain_n keeps its value)
+    task end_chains();
+        axil_write(RO_REG_CHAIN_N, 32'h0);
     endtask
 endclass
 
@@ -211,6 +251,36 @@ class ro_scoreboard extends base_scoreboard;
         end else begin
             fail_cnt++;
             $display("[%0t][RO_SCB] FAIL  %-28s  %0d/%0d bytes wrong", $time, item.label, errors, total);
+        end
+    endtask
+
+    // a chain: its whole segment against the fixture's image after the chain
+    task run_bytes(string label, input [39:0] base, ref byte unsigned exp[]);
+        logic [CHUNK_BITS-1:0] rd_buf;
+        int unsigned total, i, j, nb, errors;
+        byte unsigned got;
+        total  = exp.size();
+        errors = 0;
+        for (i = 0; i < total; i += CHUNK_BYTES) begin
+            nb = (total - i < CHUNK_BYTES) ? total - i : CHUNK_BYTES;
+            `PS.read_mem(base + 40'(i), nb, rd_buf);
+            for (j = 0; j < nb; j++) begin
+                got = rd_buf[j*8 +: 8];
+                if (got !== exp[i + j]) begin
+                    if (errors < 6)
+                        $display("[%0t][RO_SCB] MISMATCH %s byte %0d: got=0x%02x exp=0x%02x",
+                                 $time, label, i + j, got, exp[i + j]);
+                    errors++;
+                end
+            end
+        end
+        total_tests++;
+        if (errors == 0) begin
+            pass_cnt++;
+            $display("[%0t][RO_SCB] PASS  %-28s  %0d bytes", $time, label, total);
+        end else begin
+            fail_cnt++;
+            $display("[%0t][RO_SCB] FAIL  %-28s  %0d/%0d bytes wrong", $time, label, errors, total);
         end
     endtask
 endclass
@@ -312,6 +382,79 @@ class ro_test;
         end
         $fclose(fd);
         $display("[%0t][RO_TEST] %0d fixture(s) from %s", $time, ncases, data_dir);
+        run_chains();
         e.scb.print_summary();
+    endtask
+
+    // the chain fixtures (DIR/chains/manifest.txt: one line per job, `chain job op n
+    // c1 c2 a a_s1 a_s2 b b_s1 b_s2 c c_s1 c_s2 p eps aux bq_sh win_lo win_hi label`,
+    // a b c p byte offsets into the chain's segment; chain_NN_{mem,out}.hex the
+    // segment before / after): the descriptors built here, one Start per chain
+    task run_chains();
+        int fd, ci, ji, cur, nj, nchains;
+        longint op, n, c1, c2, a, as1, as2, b, bs1, bs2, c, cs1, cs2, p, eps, aux, bqsh, wlo, whi;
+        string line, label, pre;
+        byte unsigned desc[], seg[], seg_exp[], d[];
+        logic [31:0] w[32];
+        ro_item tag;
+        fd = $fopen({data_dir, "/chains/manifest.txt"}, "r");
+        if (fd == 0) begin
+            $display("[%0t][RO_TEST] no chain fixtures in %s/chains", $time, data_dir);
+            return;
+        end
+        cur = -1; nj = 0; nchains = 0;
+        desc = new[16 * 128];
+        forever begin
+            int rc;
+            rc = 0;
+            if (!$feof(fd) && $fgets(line, fd) != 0) begin
+                string tok[$];
+                longint v[21];
+                if (line.len() == 0 || line[0] == "#" || line[0] == "\n") continue;
+                // the fields one by one (a 22-conversion $sscanf crashed the xsim kernel)
+                ro_split(line, tok);
+                if (tok.size() != 22) continue;
+                for (int f = 0; f < 21; f++) void'($sscanf(tok[f], "%d", v[f]));
+                ci = v[0]; ji = v[1]; op = v[2]; n = v[3]; c1 = v[4]; c2 = v[5];
+                a = v[6]; as1 = v[7]; as2 = v[8]; b = v[9]; bs1 = v[10]; bs2 = v[11];
+                c = v[12]; cs1 = v[13]; cs2 = v[14]; p = v[15]; eps = v[16]; aux = v[17];
+                bqsh = v[18]; wlo = v[19]; whi = v[20]; label = tok[21];
+                rc = 22;
+            end
+            // a new chain (or the end): run the one collected
+            if ((rc == 0 || ci != cur) && cur >= 0) begin
+                $display("[%0t][RO_TEST] chain %0d: %0d jobs", $time, cur, nj);
+                d = new[nj * 128];
+                for (int i = 0; i < nj * 128; i++) d[i] = desc[i];
+                pre = $sformatf("%s/chains/chain_%02d_", data_dir, cur);
+                if (!ro_read_hex({pre, "mem.hex"}, seg) || !ro_read_hex({pre, "out.hex"}, seg_exp))
+                    $error("[RO] chain %0d: missing %smem.hex / out.hex", cur, pre);
+                tag = new($sformatf("chain%0d_%0djobs", cur, nj));
+                e.drv.run_chain(tag.label, seg, d, nj);
+                e.mon.run(tag);
+                e.scb.run_bytes(tag.label, RO_BUF_SEG, seg_exp);
+                nchains++;
+                nj = 0;
+            end
+            if (rc == 0) break;
+            cur = ci;
+            if (ji != nj) $error("[RO] chain %0d: job %0d out of order", ci, ji);
+            // the descriptor: the argument registers 0x10 .. 0x6c (addresses = the segment + offset)
+            w[0] = op; w[1] = n; w[2] = c1; w[3] = c2;
+            {w[5], w[4]} = 64'(RO_BUF_SEG) + 64'(a);   w[6] = as1;  w[7] = as2;
+            {w[9], w[8]} = 64'(RO_BUF_SEG) + 64'(b);   w[10] = bs1; w[11] = bs2;
+            {w[13], w[12]} = 64'(RO_BUF_SEG) + 64'(c); w[14] = cs1; w[15] = cs2;
+            {w[17], w[16]} = 64'(RO_BUF_SEG) + 64'(p);
+            {w[19], w[18]} = 64'(eps);
+            w[20] = aux; w[21] = bqsh; w[22] = wlo; w[23] = whi;
+            for (int k = 24; k < 32; k++) w[k] = '0;      // words 24 .. 31: zero by convention
+            for (int k = 0; k < 32; k++)
+                for (int y = 0; y < 4; y++)
+                    desc[nj * 128 + 4 * k + y] = w[k][8 * y +: 8];
+            nj++;
+        end
+        $fclose(fd);
+        e.drv.end_chains();
+        $display("[%0t][RO_TEST] %0d chain fixture(s)", $time, nchains);
     endtask
 endclass
