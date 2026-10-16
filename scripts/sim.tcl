@@ -114,6 +114,12 @@ puts "=== RowOps fixtures: $ro_data ==="
 # no need for a separate 'run all' — calling it after launch_simulation
 # returns causes a hang because XSim has already exited.
 # ---------------------------------------------------------------------------
+# xvlog / xelab compile from scratch: an incremental compile (xvlog --incr, the
+# fileset's INCREMENTAL default) has hung at 100 % CPU without output on a stale
+# database in <project>.sim (2026-10-15 conv_test, 2026-10-16 here) — a full
+# compile costs a few minutes and never hangs.
+set_property -name {INCREMENTAL} -value {false} -objects [get_filesets sim_1]
+
 puts "=== Launching behavioral simulation ==="
 set t0 [clock seconds]
 

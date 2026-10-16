@@ -84,8 +84,8 @@ Or from the Vivado Tcl console:
 source scripts/sim.tcl
 ```
 
-The run takes ~8 minutes (116 cases: the four kernels' constant-fill cases — ConvKernel's with two
-y channel-pattern cases — and the RowOpsKernel's 39 — its table load, its 36 checked-in fixtures and
+The run takes ~8 minutes (123 cases: the four kernels' constant-fill cases — ConvKernel's with two
+y channel-pattern cases — and the RowOpsKernel's 46 — its table load, its 43 checked-in fixtures and
 its 2 descriptor chains — through the PS VIP's DDR model) and ends with:
 
 ```
@@ -96,9 +96,9 @@ its 2 descriptor chains — through the PS VIP's DDR model) and ends with:
 ##            ConvKernel   19 /  19  (0 failed)
 ##          MatmulKernel   10 /  10  (0 failed)
 ##         PoolingKernel   19 /  19  (0 failed)
-##          RowOpsKernel   39 /  39  (0 failed)
+##          RowOpsKernel   46 /  46  (0 failed)
 ##########################################################
-##  TOTAL: 116 / 116 passed
+##  TOTAL: 123 / 123 passed
 ##  ALL TESTS PASSED
 ##########################################################
 ```
