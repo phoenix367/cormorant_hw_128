@@ -51,9 +51,8 @@ From the command line (sources Vivado when `vivado` is not on `PATH`):
 
 The scripts use the `vivado` on `PATH` (the parent repo's
 `<Xilinx>/2025.2/Vitis/settings64.sh` puts it there); only without one do
-they source `VIVADO_SETTINGS`, whose default
-(`/mnt/data/xilinx/2025.2/settings64.sh`) is the maintainer's install — set
-it to your `settings64.sh`.
+they source `VIVADO_SETTINGS` (set it to your `<Xilinx>/2025.2/settings64.sh`);
+with neither they stop and say so.
 
 The build modifies tracked files (`design_cormorant.bd`, the `.xci` files,
 `cormorant_hw_128.xpr`); do not commit them.  Vivado's warning `File not

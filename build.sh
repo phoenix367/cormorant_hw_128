@@ -17,20 +17,19 @@
 #   -ip-repo DIR  the kernels' IP repository (the parent repo's build/ip_repo_kv260);
 #                 overrides the path stored in the Vivado project file
 #
-# Vivado is sourced from VIVADO_SETTINGS if set, otherwise from the default
-# Xilinx install at /mnt/data/xilinx/2025.2/settings64.sh.
+# Vivado: the one on PATH (source <Xilinx>/2025.2/settings64.sh first), else
+# VIVADO_SETTINGS (that settings64.sh) is sourced.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VIVADO_SETTINGS="${VIVADO_SETTINGS:-/mnt/data/xilinx/2025.2/settings64.sh}"
+VIVADO_SETTINGS="${VIVADO_SETTINGS:-}"
 
 # Source Vivado environment if vivado is not already on PATH.
 if ! command -v vivado &>/dev/null; then
     if [[ ! -f "$VIVADO_SETTINGS" ]]; then
-        echo "ERROR: vivado not found in PATH and settings file not found:" >&2
-        echo "  $VIVADO_SETTINGS" >&2
-        echo "Set VIVADO_SETTINGS to the correct settings64.sh path." >&2
+        echo "ERROR: vivado is not on PATH${VIVADO_SETTINGS:+ and $VIVADO_SETTINGS does not exist}:" >&2
+        echo "  source <Xilinx>/2025.2/settings64.sh first, or set VIVADO_SETTINGS to it." >&2
         exit 1
     fi
     # shellcheck source=/dev/null
