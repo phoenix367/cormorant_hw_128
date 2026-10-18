@@ -1,3 +1,6 @@
+// Copyright 2025 GradeBuilder SL
+// SPDX-License-Identifier: Apache-2.0
+
 // base_scoreboard.svh — shared test counters and summary for all kernel scoreboards.
 virtual class base_scoreboard;
     int unsigned total_tests = 0;

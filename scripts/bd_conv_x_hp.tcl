@@ -1,3 +1,6 @@
+# Copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # bd_conv_x_hp.tcl — ConvKernel's x read port (gmem0) on an HP port, past the
 # CCI.  Idempotent; run on the project with the BD open or pass the .xpr:
 #

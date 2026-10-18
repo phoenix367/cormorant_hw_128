@@ -1,3 +1,7 @@
+// Copyright 2025 GradeBuilder SL
+// Modifications copyright 2026 Ivan Gubochkin
+// SPDX-License-Identifier: Apache-2.0
+
 // ro_classes.svh — RowOpsKernel testbench classes.
 //
 // The cases are the kernel's checked-in fixtures (the parent repo's

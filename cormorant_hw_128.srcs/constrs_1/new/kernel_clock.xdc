@@ -1,3 +1,6 @@
+# Copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # kernel_clock.xdc — timing constraints for the 250 MHz kernel clock
 # (clk_wiz_0, the parent repo's doc/plans/FMAX_250_PLAN.md).
 #

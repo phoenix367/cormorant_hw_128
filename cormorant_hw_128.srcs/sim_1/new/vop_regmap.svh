@@ -1,3 +1,7 @@
+// Copyright 2025 GradeBuilder SL
+// Modifications copyright 2026 Ivan Gubochkin
+// SPDX-License-Identifier: Apache-2.0
+
 // vop_regmap.svh — VectorOPKernel AXI-Lite register map, op codes, DDR buffers.
 // Requires VectorOPKernel_0_BASE from cormorant_addr_map.svh.
 

@@ -1,3 +1,6 @@
+# Copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # bd_hp0_outputs.tcl — the kernels' outputs on S_AXI_HP0_FPD.  Idempotent;
 # run on the project with the BD open or pass the .xpr:
 #

@@ -1,3 +1,7 @@
+// Copyright 2025 GradeBuilder SL
+// Modifications copyright 2026 Ivan Gubochkin
+// SPDX-License-Identifier: Apache-2.0
+
 // tb_infra.svh — PS VIP DDRC write-commit workaround.
 //
 // The PS VIP arb_wr_6 module asserts wr_req in the active event region before

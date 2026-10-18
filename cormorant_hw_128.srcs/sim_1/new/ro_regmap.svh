@@ -1,3 +1,6 @@
+// Copyright 2026 Ivan Gubochkin
+// SPDX-License-Identifier: Apache-2.0
+
 // ro_regmap.svh — RowOpsKernel AXI-Lite register map (the parent repo's
 // kernels/rowops_rtl/scripts/gen_driver.py, checked against rtl/ro_ctrl_s_axi.sv),
 // the op word's fields and the DDR buffers of the testbench.

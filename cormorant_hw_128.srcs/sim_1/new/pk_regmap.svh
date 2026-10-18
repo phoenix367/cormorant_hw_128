@@ -1,3 +1,6 @@
+// Copyright 2025 GradeBuilder SL
+// SPDX-License-Identifier: Apache-2.0
+
 // pk_regmap.svh — PoolingKernel AXI-Lite register map.
 // Source: xpoolingkernel_hw.h  Requires PoolingKernel_0_BASE from cormorant_addr_map.svh.
 

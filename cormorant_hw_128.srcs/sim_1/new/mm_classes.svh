@@ -1,3 +1,6 @@
+// Copyright 2025 GradeBuilder SL
+// SPDX-License-Identifier: Apache-2.0
+
 // mm_classes.svh — MatmulKernel testbench classes.
 //
 // DDR layout (base 0x3000_0000, gaps of MEM_GAP between tensors):

@@ -1,3 +1,6 @@
+# Copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # bd_kernel_clock.tcl — the PL design's clock from an MMCM, register slices
 # in the data interconnects.  Idempotent; run on the project with the BD open
 # or pass the .bd file:

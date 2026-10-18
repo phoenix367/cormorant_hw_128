@@ -1,3 +1,7 @@
+// Copyright 2025 GradeBuilder SL
+// Modifications copyright 2026 Ivan Gubochkin
+// SPDX-License-Identifier: Apache-2.0
+
 // conv_regmap.svh — ConvKernel AXI-Lite register map.
 // Source: xconvkernel_hw.h  Requires ConvKernel_0_BASE from cormorant_addr_map.svh.
 

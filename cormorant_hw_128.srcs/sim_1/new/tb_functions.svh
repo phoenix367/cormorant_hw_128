@@ -1,3 +1,7 @@
+// Copyright 2025 GradeBuilder SL
+// Modifications copyright 2026 Ivan Gubochkin
+// SPDX-License-Identifier: Apache-2.0
+
 // tb_functions.svh — shared reference arithmetic for cormorant_tb.
 //
 // ap_fixed<16,8> encoding:  real_value = raw_int16 / 256.0

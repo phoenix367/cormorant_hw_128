@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright 2025 GradeBuilder SL
+# SPDX-License-Identifier: Apache-2.0
+
 # build.sh — Cormorant HW build wrapper
 #
 # Usage:

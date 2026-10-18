@@ -1,3 +1,7 @@
+// Copyright 2025 GradeBuilder SL
+// Modifications copyright 2026 Ivan Gubochkin
+// SPDX-License-Identifier: Apache-2.0
+
 // conv_classes.svh — ConvKernel testbench classes.
 //
 // DDR layout (base 0x2000_0000, gaps of MEM_GAP between tensors):

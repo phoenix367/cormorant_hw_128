@@ -1,3 +1,7 @@
+# Copyright 2025 GradeBuilder SL
+# Modifications copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # gen_addr_map.tcl
 # Reads design_cormorant.hwh and generates cormorant_addr_map.svh with one
 # localparam per kernel AXI-Lite control base address.

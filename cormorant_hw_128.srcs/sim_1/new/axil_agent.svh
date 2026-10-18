@@ -1,3 +1,6 @@
+// Copyright 2025 GradeBuilder SL
+// SPDX-License-Identifier: Apache-2.0
+
 // axil_agent.svh — shared AXI-Lite read/write base for all drivers and monitors.
 virtual class axil_agent;
     protected string tag;

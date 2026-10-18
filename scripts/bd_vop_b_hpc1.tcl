@@ -1,3 +1,6 @@
+# Copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # bd_vop_b_hpc1.tcl — VectorOPKernel's second read port (gmem1, operand b) on
 # S_AXI_HPC1_FPD.  Idempotent; run on the project with the BD open or pass the .xpr:
 #

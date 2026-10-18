@@ -1,3 +1,6 @@
+// Copyright 2025 GradeBuilder SL
+// SPDX-License-Identifier: Apache-2.0
+
 // mm_regmap.svh — MatmulKernel AXI-Lite register map.
 // Source: xmatmulkernel_hw.h  Requires MatmulKernel_0_BASE from cormorant_addr_map.svh.
 

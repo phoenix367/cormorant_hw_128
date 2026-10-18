@@ -1,3 +1,6 @@
+# Copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # ip_defaults.tcl — kernel instances' m_axi data widths = their IP's defaults.
 #
 # Sourced by build.tcl and sim.tcl, called after the IP upgrade.  The

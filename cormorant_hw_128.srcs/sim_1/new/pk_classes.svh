@@ -1,3 +1,6 @@
+// Copyright 2025 GradeBuilder SL
+// SPDX-License-Identifier: Apache-2.0
+
 // pk_classes.svh — PoolingKernel testbench classes.
 //
 // DDR layout (base 0x4000_0000):

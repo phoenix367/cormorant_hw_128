@@ -1,3 +1,6 @@
+# Copyright 2026 Ivan Gubochkin
+# SPDX-License-Identifier: Apache-2.0
+
 # bd_rowops_hp0.tcl — the RowOpsKernel (the parent repo's row-ops unit,
 # doc/plans/HOSTOPS_PLAN.md phase 3; kernels/rowops_rtl) on S_AXI_HP0_FPD.
 # Idempotent; run on the project with the BD open or pass the .xpr:

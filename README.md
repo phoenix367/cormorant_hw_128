@@ -6,7 +6,7 @@ cores (the ConvKernel, the MatmulKernel, the VectorOPKernel, the
 PoolingKernel and the RowOpsKernel — the row-ops unit — all in SystemVerilog)
 connected to the Zynq MPSoC PS via AXI.
 
-This is the hardware sub-project of [Cormorant](https://github.com/GradeBuilderSL/cormorant)
+This is the hardware sub-project of [Cormorant](https://github.com/phoenix367/cormorant)
 — an FPGA neural-network inference accelerator.
 
 ## Prerequisites
@@ -18,7 +18,7 @@ This is the hardware sub-project of [Cormorant](https://github.com/GradeBuilderS
 ## Quick Start
 
 ```bash
-git clone git@github.com:GradeBuilderSL/cormorant_hw_128.git
+git clone git@github.com:phoenix367/cormorant_hw_128.git
 cd cormorant_hw_128
 ```
 
@@ -237,16 +237,8 @@ source cormorant_hw_128.srcs/sim_1/new/gen_addr_map.tcl
 
 This reads `design_cormorant.hwh` and overwrites `cormorant_addr_map.svh`.
 
-## Funding
-
-[![dAIEDGE Project](https://img.shields.io/badge/dAIEDGE-Project-6A5ACD?style=for-the-badge)](https://daiedge.eu/)
-[![EU Horizon Europe](https://img.shields.io/badge/Funded%20by-EU%20Horizon%20Europe-003399?style=for-the-badge&logo=europeanunion&logoColor=white)](https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe_en)
-
-This work was supported by the **[dAIEDGE Open Call Programme](https://daiedge.eu/)**, funded by the **[European Union's Horizon Europe research and innovation programme](https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe_en)** under project number **#101120726**.
-
----
-
 ## License
 
-Copyright 2025 GradeBuilder SL. Licensed under the
-[Apache License, Version 2.0](LICENSE).
+Copyright 2026 Ivan Gubochkin; portions copyright 2025 GradeBuilder SL (the
+project up to the fork, commit `cd24674`; see [NOTICE](NOTICE)). Licensed under
+the [Apache License, Version 2.0](LICENSE).
