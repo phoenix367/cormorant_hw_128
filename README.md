@@ -18,7 +18,7 @@ This is the hardware sub-project of [Cormorant](https://github.com/phoenix367/co
 ## Quick Start
 
 ```bash
-git clone git@github.com:phoenix367/cormorant_hw_128.git
+git clone https://github.com/phoenix367/cormorant_hw_128.git
 cd cormorant_hw_128
 ```
 
@@ -44,6 +44,9 @@ From the command line (sources Vivado when `vivado` is not on `PATH`):
 
 # Override parallel job count (default: 8)
 ./build.sh all -jobs 12
+
+# The kernels' IP repository (the parent build's `make ip_repo_kv260`; the path the project stores is a stale default)
+./build.sh all -ip-repo /path/to/cormorant/build/ip_repo_kv260
 ```
 
 The scripts use the `vivado` on `PATH` (the parent repo's
@@ -75,7 +78,7 @@ From the command line:
 
 ```bash
 ./sim.sh
-./sim.sh -ip-repo /path/to/kernels
+./sim.sh -ip-repo /path/to/cormorant/build/ip_repo_kv260
 ```
 
 Or from the Vivado Tcl console:
@@ -120,7 +123,7 @@ mirrors the kernel's fixed-point `poly_sqrt` bit for bit.
 | `MatmulKernel_0` | Tiled matrix multiply, GEMV streaming — the parent repo's SystemVerilog kernel (`kernels/matmul_rtl`, `make package_matmul_rtl`; same VLNV as the retired HLS one) | `0xA001_0000` | gmem0, gmem2 → `S_AXI_HPC0_FPD`; gmem1 → `S_AXI_HPC1_FPD` |
 | `ConvKernel_0` | 2-D convolution (NCHW), MatMuls as convs — the parent repo's SystemVerilog kernel (`kernels/conv_rtl`, `make package_conv_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA002_0000` | gmem0 → `S_AXI_HP2_FPD`; gmem3 → `S_AXI_HPC0_FPD`; gmem1, gmem2 → `S_AXI_HPC1_FPD` |
 | `PoolingKernel_0` | Max/Avg/Lp/Global pooling — the parent repo's SystemVerilog kernel (`kernels/pool_rtl`, `make package_pool_rtl`; same VLNV, widths and m_axi bus parameters as the retired HLS one) | `0xA003_0000` | gmem0–1 → `S_AXI_HPC0_FPD` |
-| `RowOpsKernel_0` | The row-ops unit: the transformer graphs' row ops (norms, residual adds, SiLU·up, RoPE, dequant, copies, block transposes) in fixed point — the parent repo's SystemVerilog kernel (`kernels/rowops_rtl`, `make package_rowops_rtl`; `doc/plans/HOSTOPS_PLAN.md`) | `0xA004_0000` | gmem0 (read + write) → `S_AXI_HP0_FPD` |
+| `RowOpsKernel_0` | The row-ops unit: the transformer graphs' row ops (norms, residual adds, SiLU·up, RoPE, dequant, copies, block transposes, Piper's fold and gate) in fixed point — the parent repo's SystemVerilog kernel (`kernels/rowops_rtl`, `make package_rowops_rtl`; `doc/plans/HOSTOPS_PLAN.md`) | `0xA004_0000` | gmem0 (read + write) → `S_AXI_HP0_FPD` |
 
 All data ports are 128-bit AXI4.  Seven of them aggregate through
 `axi_interconnect_0` into `S_AXI_HPC0_FPD`; four (ConvKernel gmem1 / gmem2,
@@ -177,8 +180,14 @@ interconnect on HP0 (`doc/plans/HOSTOPS_PLAN.md` phase 3) WNS +0.020 ns,
 WHS +0.010 ns (bitstream `1cedaf2ed816`: 93 969 LUT, 136 / 144 BRAM tiles,
 55 / 64 URAM, 833 DSP); with the row-ops unit's FOLD and the kernels' area
 pass (the parent repo's `doc/plans/HOSTOPS_PLAN.md` §11, `doc/plans/AREA_PLAN.md`)
-WNS +0.029 ns, WHS +0.010 ns (bitstream `de968ccc45da`, production: 89 547
-LUT, 136 / 144 BRAM tiles, 55 / 64 URAM, 841 DSP).
+WNS +0.029 ns, WHS +0.010 ns (bitstream `de968ccc45da`: 89 547
+LUT, 136 / 144 BRAM tiles, 55 / 64 URAM, 841 DSP); with ConvKernel's y channel
+pattern and the unit's descriptor chains (`doc/plans/RPU_PLAN.md` §13) WNS
++0.022 ns, WHS +0.010 ns (bitstream `33a799febc56`: 90 607 LUT, 136 / 144 BRAM
+tiles, 55 / 64 URAM, 841 DSP); with the unit's GATE op and SCALE flag
+(`doc/plans/RPU_PLAN.md` §14) WNS +0.027 ns, WHS +0.010 ns (bitstream
+`04259a7af917`, production since 2026-10-17: 91 805 LUT, 136 / 144 BRAM tiles,
+57 / 64 URAM, 845 DSP).
 
 Instance widths follow the IPs: after the IP upgrade, `build.tcl` and
 `sim.tcl` put every kernel instance's `C_M_AXI_*_DATA_WIDTH` back to the

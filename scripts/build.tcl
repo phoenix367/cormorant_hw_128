@@ -9,7 +9,7 @@
 #   vivado -mode batch -source scripts/build.tcl -tclargs synth
 #   vivado -mode batch -source scripts/build.tcl -tclargs impl
 #   vivado -mode batch -source scripts/build.tcl -tclargs all -jobs 12
-#   vivado -mode batch -source scripts/build.tcl -tclargs all -ip-repo /path/to/kernels
+#   vivado -mode batch -source scripts/build.tcl -tclargs all -ip-repo /path/to/cormorant/build/ip_repo_kv260
 #
 # Stages:
 #   synth  — synthesis only
@@ -19,7 +19,7 @@
 # Options:
 #   -jobs N        parallel jobs (default: 8)
 #   -ip-repo DIR   override the IP repository path stored in the project file;
-#                  use this to point at the HLS kernel build output directory
+#                  use this to point at the parent repo's build/ip_repo_kv260
 
 # ---------------------------------------------------------------------------
 # Parse arguments

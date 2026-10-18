@@ -62,10 +62,11 @@ repo's loader checks it against the HWH's 100 MHz before programming (and
 sets it when it differs), so a stale PL0 setting can neither change the
 kernel clock nor overclock an older 100 MHz bitstream.
 `pl_resetn0` resets the MMCM; its `locked` holds `rst_ps8_0_99M`
-(`dcm_locked`).  The two data interconnects carry register slices ("Outer")
-on every SI and on `axi_interconnect_0`'s MI (the read-only HPC1 MI has
-none); `cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` replicates the
-HPC0 slice's ready.  `scripts/bd_kernel_clock.tcl` makes all of it from the
+(`dcm_locked`).  The four data interconnects carry register slices ("Outer")
+on every SI, and on the MIs of `axi_interconnect_0` and `axi_rowops_intercon`
+(the read-only HPC1 and HP2 MIs have none);
+`cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` replicates the ready
+of those two MI slices.  `scripts/bd_kernel_clock.tcl` makes all of it from the
 100 MHz design (idempotent), and `scripts/build.tcl` runs impl_1 with
 `place_design ExtraTimingOpt`, `phys_opt_design` / `route_design`
 `AggressiveExplore` and post-route `phys_opt_design` — with the project's
@@ -84,8 +85,14 @@ WHS +0.010 ns (bitstream `1cedaf2ed816`: 93 969 LUT, 113 020 FF, 136 / 144
 BRAM tiles, 55 / 64 URAM, 833 DSP); with the row-ops unit's FOLD and the
 kernels' area pass (the parent repo's `doc/plans/HOSTOPS_PLAN.md` §11,
 `doc/plans/AREA_PLAN.md`) WNS +0.029 ns, WHS +0.010 ns (bitstream
-`de968ccc45da`, production: 89 547 LUT, 108 713 FF, 136 / 144 BRAM tiles,
-55 / 64 URAM, 841 DSP).
+`de968ccc45da`: 89 547 LUT, 108 713 FF, 136 / 144 BRAM tiles,
+55 / 64 URAM, 841 DSP); with ConvKernel's y channel pattern and the unit's
+descriptor chains (`doc/plans/RPU_PLAN.md` §13) WNS +0.022 ns, WHS +0.010 ns
+(bitstream `33a799febc56`: 90 607 LUT, 109 798 FF, 136 / 144 BRAM tiles,
+55 / 64 URAM, 841 DSP); with the unit's GATE op and SCALE flag
+(`doc/plans/RPU_PLAN.md` §14) WNS +0.027 ns, WHS +0.010 ns (bitstream
+`04259a7af917`, production since 2026-10-17: 91 805 LUT, 111 099 FF,
+136 / 144 BRAM tiles, 57 / 64 URAM, 845 DSP).
 
 Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
 `S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
@@ -102,7 +109,7 @@ but performance-neutral (PS_PORTS_PLAN §1–§4).  When moving a master between
 `SEG_*` address segments first or `assign_bd_address` collides.  A BD script
 run on a freshly checked-out `.xpr` needs the parent build's IP repository
 (`-ip-repo …/build_hw128/ip_repo_kv260`, and `upgrade_ip` of the locked IPs):
-the project's stored repository path is a stale default, the four kernel IPs
+the project's stored repository path is a stale default, the five kernel IPs
 are then locked and `validate_bd_design` refuses.  A `.gen/sources_1/bd/design_cormorant`
 generated from another version of the design locks blocks too ("stale
 content") — delete it; `sim.tcl` / `build.tcl` regenerate it.
@@ -110,9 +117,10 @@ content") — delete it; `sim.tcl` / `build.tcl` regenerate it.
 Until 2026-09-24 every kernel instance and `S_AXI_HPC0_FPD` were in fact
 32-bit (`C_M_AXI_*_DATA_WIDTH = 32`, `PSU__SAXIGP0__DATA_WIDTH = 32`,
 interconnect crossbar 32) — the conv kernel's native 128-bit weight port
-was narrowed 4:1 by its own adapter.  Now the kernels are exported with
-`-m_axi_min_bitwidth 128` (CMake `AXI_BUS_WIDTH=128`), the instance
-parameters are 128 and HPC0 is 128.  Do not widen the instance
+was narrowed 4:1 by its own adapter.  Now the kernels' data ports are 128
+bits (the RTL IPs' fixed width; the HLS exports took `-m_axi_min_bitwidth
+128`, CMake `AXI_BUS_WIDTH=128`), the instance parameters are 128 and HPC0
+is 128.  Do not widen the instance
 parameters beyond the IP's own default: the HLS wrapper's
 `C_M_AXI_*_WSTRB_WIDTH` literal does not follow, and WSTRB ends up
 4 bits wide.  `build.tcl` / `sim.tcl` enforce it: after the IP upgrade,
@@ -134,7 +142,7 @@ had it — the board then silently ran the old control block.  Keep
 register on the board with a write-then-read before trusting results.
 
 The `_128` suffix indicates the 128-bit (`m_axi` DATA_WIDTH=128) data ports of
-all four kernels (once a Vitis HLS synthesis option, now the RTL IPs' fixed
+all five kernels (once a Vitis HLS synthesis option, now the RTL IPs' fixed
 width), which doubles DDR bandwidth versus the 64-bit default.
 
 ## Synthesis and Implementation
@@ -218,7 +226,7 @@ run all
 ```
 
 The testbench prints a per-kernel pass/fail table and a combined summary
-(~3 min):
+(~8 min):
 
 ```
 ##########################################################
@@ -280,7 +288,8 @@ This reads `design_cormorant.hwh` and overwrites `cormorant_addr_map.svh`.
 ### Other Kernels
 
 See the corresponding `*_regmap.svh` file for MatmulKernel (`0xA001_0000`),
-ConvKernel (`0xA002_0000`), and PoolingKernel (`0xA003_0000`).
+ConvKernel (`0xA002_0000`), PoolingKernel (`0xA003_0000`) and RowOpsKernel
+(`0xA004_0000`).
 
 ## Element Type
 
@@ -300,7 +309,8 @@ The testbench `ELEM_BYTES` localparam and the fixed-point helpers in
   warning: their port clocks come from the MMCM, which `pl_resetn0` holds in
   reset, so they do not toggle during the reset pulse.
 - **PS VIP slave profile**: set to `BEST_CASE` (fixed 21-cycle write-response
-  latency) on `S_AXI_HPC0_FPD` for deterministic simulation timing.
+  latency) on `S_AXI_HPC0_FPD`, `S_AXI_HP2_FPD` and `S_AXI_HP0_FPD` for
+  deterministic simulation timing.
 - **DDRC write-commit workaround** (`tb_infra.svh`): the PS VIP `arb_wr_6`
   module races between active/inactive regions on `wr_req`. The fix intercepts
   every `wr_req` rising edge at +1 ns and commits bytes directly into

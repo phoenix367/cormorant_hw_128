@@ -8,7 +8,7 @@
 #   ./sim.sh [-ip-repo DIR]
 #
 # Options:
-#   -ip-repo DIR  path to the HLS kernel IP repository directory;
+#   -ip-repo DIR  the kernels' IP repository (the parent repo's build/ip_repo_kv260);
 #                 overrides the path stored in the Vivado project file
 #
 # Vivado is sourced from VIVADO_SETTINGS if set, otherwise from the default

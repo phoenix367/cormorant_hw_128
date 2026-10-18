@@ -6,7 +6,7 @@
 #
 # Usage (from project root):
 #   vivado -mode batch -source scripts/sim.tcl
-#   vivado -mode batch -source scripts/sim.tcl -tclargs -ip-repo /path/to/kernels
+#   vivado -mode batch -source scripts/sim.tcl -tclargs -ip-repo /path/to/cormorant/build/ip_repo_kv260
 #
 # Options:
 #   -ip-repo DIR   override the IP repository path stored in the project file
