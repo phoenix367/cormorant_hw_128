@@ -76,12 +76,20 @@ module cormorant_tb;
         `PS.set_debug_level_info(1);
         // The PS AXI ports are clocked by the MMCM, which pl_resetn0 holds in
         // reset: during the PL reset pulse their clocks do not toggle, and the
-        // VIPs' 16-cycle ARESETN check would report a pulse of 0 cycles.
+        // VIPs' 16-cycle ARESETN check would report a pulse of 0 cycles.  The
+        // camera capture path's two ports (scripts/bd_mipi_capture.tcl) run on
+        // its own MMCM, cap_clk, held in reset the same way.
         `PS.M_AXI_HPM0_FPD.master.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HPC0_FPD.slave.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HPC1_FPD.slave.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HP2_FPD.slave.IF.set_xilinx_reset_check_to_warn();
         `PS.S_AXI_HP0_FPD.slave.IF.set_xilinx_reset_check_to_warn();
+        `PS.M_AXI_HPM0_LPD.master.IF.set_xilinx_reset_check_to_warn();
+        `PS.S_AXI_HP3_FPD.slave.IF.set_xilinx_reset_check_to_warn();
+        // The VIP leaves emio_gpio_o undriven (Z): hold the frame buffer's and
+        // the ISP's resets (EMIO 0 / 1) low, as the board's GPIO does until the
+        // drivers release them, or the frame buffer drives X onto HP3.
+        force dut.zynq_ultra_ps_e_0_emio_gpio_o = 2'b00;
 
         // POR + system reset, then PL fabric reset.
         `PS.por_srstb_reset(1'b0);   // assert  → DDR model enters reset

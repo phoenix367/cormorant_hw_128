@@ -17,8 +17,9 @@ a 128-bit AXI bus.
 | `cormorant_hw_128.srcs/sources_1/bd/design_cormorant/ip/*/` | IP core configurations (`.xci`) |
 | `cormorant_hw_128.srcs/sim_1/new/` | Simulation testbench (SystemVerilog) |
 | `cormorant_tb_behav.wcfg` | Waveform configuration for Vivado simulator |
-| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`); the block-design edits (`bd_kernel_clock.tcl`, `bd_vop_b_hpc1.tcl`, `bd_conv_x_hp.tcl`, `bd_rowops_hp0.tcl`; `bd_hp0_outputs.tcl`, an experiment not in the design) |
+| `build.sh`, `sim.sh`, `scripts/` | Batch build / simulation wrappers and their Tcl (`build.tcl`, `sim.tcl`, `ip_defaults.tcl`); the block-design edits (`bd_kernel_clock.tcl`, `bd_vop_b_hpc1.tcl`, `bd_conv_x_hp.tcl`, `bd_rowops_hp0.tcl`, `bd_mipi_capture.tcl`; `bd_hp0_outputs.tcl`, an experiment not in the design) |
 | `cormorant_hw_128.srcs/constrs_1/new/kernel_clock.xdc` | Timing constraints of the 250 MHz kernel clock |
+| `cormorant_hw_128.srcs/constrs_1/new/capture.xdc` | The camera ports' pins (MIPI termination, I²C, the ISP's reset and standby) |
 
 Generated directories (`*.runs/`, `*.gen/`, `*.ip_user_files/`, `*.sim/`,
 `*.cache/`, `*.hw/`) are excluded from git — regenerate them by opening the
@@ -91,8 +92,26 @@ descriptor chains (`doc/plans/RPU_PLAN.md` §13) WNS +0.022 ns, WHS +0.010 ns
 (bitstream `33a799febc56`: 90 607 LUT, 109 798 FF, 136 / 144 BRAM tiles,
 55 / 64 URAM, 841 DSP); with the unit's GATE op and SCALE flag
 (`doc/plans/RPU_PLAN.md` §14) WNS +0.027 ns, WHS +0.010 ns (bitstream
-`04259a7af917`, production since 2026-10-17: 91 805 LUT, 111 099 FF,
+`04259a7af917`, production from 2026-10-17 to 2026-10-28: 91 805 LUT, 111 099 FF,
 136 / 144 BRAM tiles, 57 / 64 URAM, 845 DSP).
+
+**Camera capture path (2026-10-27, `scripts/bd_mipi_capture.tcl`; the
+README's *Camera capture path*).**  The AR1335 / AP1302 camera into DDR, as
+AMD's `kv260_ispMipiRx_vcu_DP` platform wires it: every cell prefixed `cap_`
+— `cap_csi` (MIPI CSI-2 receiver, bank 66) → `cap_fifo` → `cap_subset` →
+`cap_fb` (NV12 frame-buffer writer, line buffers in four RAMB36) →
+`S_AXI_HP3_FPD`; `cap_iic` (the ISP's I²C); control on `M_AXI_HPM0_LPD`
+through `cap_smc` (`0x8000_0000` / `0x8001_0000` / `0x8003_0000`),
+interrupts through `cap_irq` into `pl_ps_irq1` (SPIs 104 / 105 / 107), resets
+on EMIO GPIO 0 / 1.  It runs on its own MMCM `cap_clk` (200 MHz) and
+`pl_clk0`, never on the kernels' 250 MHz clock.  Block RAM is the limit
+(142 / 144 tiles with it: the path takes six RAMB36 — four in the frame
+buffer, two in the receiver — and one URAM, the receiver's), hence the frame
+buffer's 1920-pixel maximum width.  Bitstream `b4e63457057a` (production since 2026-10-28; its kernels
+are the second area pass of the parent repo's `doc/plans/AREA_PLAN.md` §6): WNS
++0.040 ns, WHS +0.010 ns, 87 013 LUT, 142 / 144 BRAM tiles, 58 / 64 URAM,
+845 DSP.  Its overlay is the parent repo's `dts/kv260/cormorant_capture.dts`;
+never apply it over a bitstream without the path (unmapped LPD port).
 
 Since 2026-09-26 (RESNET18_15FPS_PLAN.md step 6) a second 128-bit PS port
 `S_AXI_HPC1_FPD` is fed by `axi_mem_intercon` (ConvKernel w/b, MatmulKernel
@@ -307,7 +326,13 @@ The testbench `ELEM_BYTES` localparam and the fixed-point helpers in
   reset block's port never wakes a `wait` in xsim) with a 200 µs timeout;
   the MMCM locks within 10 µs.  The PS VIPs' 16-cycle ARESETN check is a
   warning: their port clocks come from the MMCM, which `pl_resetn0` holds in
-  reset, so they do not toggle during the reset pulse.
+  reset, so they do not toggle during the reset pulse (the capture path's
+  `M_AXI_HPM0_LPD` and `S_AXI_HP3_FPD` too: `cap_clk`).
+- **EMIO GPIO in simulation**: the PS VIP leaves `emio_gpio_o` undriven (Z),
+  so `cormorant_tb.sv` forces it to 0 — the board's state until the drivers
+  release the resets; floating, the capture path's frame buffer drove X onto
+  HP3 and the protocol checker stopped the run at 1580 ns.  The capture path
+  itself is not exercised in simulation (no MIPI stimulus).
 - **PS VIP slave profile**: set to `BEST_CASE` (fixed 21-cycle write-response
   latency) on `S_AXI_HPC0_FPD`, `S_AXI_HP2_FPD` and `S_AXI_HP0_FPD` for
   deterministic simulation timing.

@@ -185,8 +185,33 @@ pattern and the unit's descriptor chains (`doc/plans/RPU_PLAN.md` §13) WNS
 +0.022 ns, WHS +0.010 ns (bitstream `33a799febc56`: 90 607 LUT, 136 / 144 BRAM
 tiles, 55 / 64 URAM, 841 DSP); with the unit's GATE op and SCALE flag
 (`doc/plans/RPU_PLAN.md` §14) WNS +0.027 ns, WHS +0.010 ns (bitstream
-`04259a7af917`, production since 2026-10-17: 91 805 LUT, 136 / 144 BRAM tiles,
+`04259a7af917`, production from 2026-10-17 to 2026-10-28: 91 805 LUT, 136 / 144 BRAM tiles,
 57 / 64 URAM, 845 DSP).
+
+**Camera capture path (2026-10-27, `scripts/bd_mipi_capture.tcl`).**  The
+KV260's camera — the AR1335 sensor behind the carrier card's AP1302 ISP — into
+DDR, as AMD's `kv260_ispMipiRx_vcu_DP` platform wires it, without its VCU and
+audio: `cap_csi` (MIPI CSI-2 receiver, 4 lanes on bank 66, 896 Mb/s, YUV 4:2:0
+8-bit, 2 pixels per clock) → `cap_fifo` → `cap_subset` (32 → 48-bit TDATA) →
+`cap_fb` (frame-buffer writer, NV12 only, ≤ 1920 × 1080, its line buffers in
+four RAMB36) → `S_AXI_HP3_FPD` (SAXIGP5, 128-bit); `cap_iic` (AXI I²C, 400 kHz:
+the carrier's PCA9546 switch, the ISP on channel 0).  Their control ports hang
+off `M_AXI_HPM0_LPD` through `cap_smc` at the smartcam overlay's addresses —
+`cap_csi` `0x8000_0000`, `cap_fb` `0x8001_0000`, `cap_iic` `0x8003_0000` — and
+their interrupts go through `cap_irq` into `pl_ps_irq1` (SPIs 104, 105, 107).
+The frame buffer's `ap_rst_n` and the ISP's `ap1302_rst_b` are EMIO GPIO 0 / 1
+(Linux GPIOs 78 / 79); the pins (`mipi_phy_if`, `iic`, `ap1302_rst_b`,
+`ap1302_standby`) are in `cormorant_hw_128.srcs/constrs_1/new/capture.xdc`.
+The path runs on its own MMCM, `cap_clk` (200 MHz from `pl_clk0`: the D-PHY
+reference, the video stream, HP3), and the LPD port at `pl_clk0`'s 100 MHz,
+apart from the kernels' 250 MHz domain, which it leaves untouched.  The parent
+repo's overlay `dts/kv260/cormorant_capture.dts` (the kernels' nodes plus the
+camera's V4L2 media pipeline) goes with it; `demo/camera` reads the camera
+with `"camera": {"source": "mipi"}`.  Routed: WNS +0.040 ns, WHS +0.010 ns
+(bitstream `b4e63457057a`, production since 2026-10-28: 87 013 LUT, 142 / 144 BRAM tiles,
+58 / 64 URAM, 845 DSP — the kernels are the area pass of the parent repo's
+`be401a1`); on the board 159 / 159 models pass and the 72 kernel benchmarks
+stay within the previous production bitstream's own run-to-run spread.
 
 Instance widths follow the IPs: after the IP upgrade, `build.tcl` and
 `sim.tcl` put every kernel instance's `C_M_AXI_*_DATA_WIDTH` back to the
@@ -211,9 +236,11 @@ scripts/bd_kernel_clock.tcl                  Block-design edit: the 250 MHz MMCM
 scripts/bd_vop_b_hpc1.tcl                    Block-design edit: VectorOPKernel b on S_AXI_HPC1_FPD
 scripts/bd_conv_x_hp.tcl                     Block-design edit: ConvKernel x on S_AXI_HP2_FPD
 scripts/bd_rowops_hp0.tcl                    Block-design edit: the RowOpsKernel on S_AXI_HP0_FPD
+scripts/bd_mipi_capture.tcl                  Block-design edit: the camera capture path (MIPI CSI-2 → NV12 on S_AXI_HP3_FPD)
 scripts/bd_hp0_outputs.tcl                   An experiment, not in the design (outputs on HP0)
 cormorant_hw_128.srcs/
   constrs_1/new/kernel_clock.xdc             Timing constraints of the 250 MHz kernel clock
+  constrs_1/new/capture.xdc                  The camera ports' pins (MIPI termination, I²C, the ISP's reset)
   sources_1/bd/design_cormorant/
     design_cormorant.bd                      Block diagram
     design_cormorant.bda                     Automation settings
